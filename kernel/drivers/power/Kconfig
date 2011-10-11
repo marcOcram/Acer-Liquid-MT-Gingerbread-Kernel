@@ -226,4 +226,9 @@ config BATTERY_MSM_A4
 	help
 	  battery driver for project A4
 
+config ENABLE_ONE_PERCENT_BATTERY_STEPS
+	bool "Enable 1% battery steps?"
+	depends on BATTERY_MSM_A4
+	default n
+
 endif # POWER_SUPPLY

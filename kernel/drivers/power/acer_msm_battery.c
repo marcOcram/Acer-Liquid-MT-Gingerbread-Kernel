@@ -788,22 +788,42 @@ static u32 acer_batt_capacity_scheme(u32 pre_chg_type, u32 chg_type,
 				/* for AC, increase 5%: 300s; for USB, increase 5%: 540s;
 				get half time: 150s and 300s to avoid gapping */
 				if (batt_table == BATT_CHG_25C_900mA)
+#ifdef CONFIG_ENABLE_ONE_PERCENT_BATTERY_STEPS
+					change_capacity_time = AC_CHANGE_TIME/5;
+#else
 					change_capacity_time = AC_CHANGE_TIME;
+#endif
 				else
+#ifdef CONFIG_ENABLE_ONE_PERCENT_BATTERY_STEPS
+					change_capacity_time = NOT_AC_CHANGE_TIME/5;
+#else
 					change_capacity_time = NOT_AC_CHANGE_TIME;
+#endif
 
 				if ((chg_type != CHARGER_TYPE_NONE) &&
 					(base_battery_capacity >= 90))
+#ifdef CONFIG_ENABLE_ONE_PERCENT_BATTERY_STEPS
+						change_capacity_time = GREATER_THAN_90_CHANGE_TIME/5;
+#else
 						change_capacity_time = GREATER_THAN_90_CHANGE_TIME;
+#endif
 
 				if ((delta_time > change_capacity_time) &&
 					((change_counter >= 2) || (change_counter <= -2))) {
 					change_time = current_kernel_time();
 
 					if (change_counter <= -2)
+#ifdef CONFIG_ENABLE_ONE_PERCENT_BATTERY_STEPS
+						transfer_batt_capacity = base_battery_capacity - 1;
+#else
 						transfer_batt_capacity = base_battery_capacity - 5;
+#endif
 					else
+#ifdef CONFIG_ENABLE_ONE_PERCENT_BATTERY_STEPS
+						transfer_batt_capacity = base_battery_capacity + 1;
+#else
 						transfer_batt_capacity = base_battery_capacity + 5;
+#endif
 
 					base_battery_capacity = transfer_batt_capacity;
 					change_counter  = 0;
