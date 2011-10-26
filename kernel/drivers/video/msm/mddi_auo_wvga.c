@@ -429,12 +429,19 @@ static int __init mddi_auo_init(void)
 		pinfo->fb_num = 2;		/* allocate for dubble buffer */
 		pinfo->bl_max = 255;		/* backlight MAX value */
 		pinfo->bl_min = 0;		/* backlight MIN value */
+#ifdef CONFIG_ENABLE_VSYNC
 		pinfo->clk_rate = 184320000;	/* clock setting, MAX 200MHz */
 		pinfo->clk_min =  184320000;
 		pinfo->clk_max =  184320000;
+#else
+		pinfo->clk_rate = 200000000;	/* clock setting, MAX 200MHz */
+		pinfo->clk_min =  200000000;
+		pinfo->clk_max =  200000000;
+#endif
 		pinfo->width = 47;		/* Actual size, in mm */
 		pinfo->height = 79;
 		pinfo->mddi.vdopkt = MDDI_DEFAULT_PRIM_PIX_ATTR;
+#ifdef CONFIG_ENABLE_VSYNC
 		pinfo->lcd.vsync_enable = TRUE;
 		pinfo->lcd.refx100 = 5800;
 		pinfo->lcd.v_back_porch = 2;
@@ -442,6 +449,10 @@ static int __init mddi_auo_init(void)
 		pinfo->lcd.v_pulse_width = 2;
 		pinfo->lcd.hw_vsync_mode = TRUE;
 		pinfo->lcd.vsync_notifier_period = 0;
+#else
+		pinfo->lcd.vsync_enable = FALSE;
+		pinfo->lcd.hw_vsync_mode = FALSE;
+#endif
 
 		/* Init GPIOs*/
 		auo_gpio_init();
