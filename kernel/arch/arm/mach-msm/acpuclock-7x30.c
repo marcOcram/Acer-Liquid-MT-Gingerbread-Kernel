@@ -99,8 +99,8 @@ static struct pll pll2_tbl[] = {
 #ifdef CONFIG_ENABLE_OVERCLOCK
 	{  79,  0, 1, 0 },  /* 1516 MHz */
 	{  84,  0, 1, 0 },  /* 1612 MHz */
-	{  94,  0, 1, 0 },  /* 1804 MHz */
 #ifdef CONFIG_ENABLE_EXTREME_HIGH_FREQUENCIES
+	{  94,  0, 1, 0 },  /* 1804 MHz */
 	{  100, 0, 1, 0 },  /* 1920 MHz */
 	{  104, 0, 1, 0 },  /* 1997 MHz */
 #endif
