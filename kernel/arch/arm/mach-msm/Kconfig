@@ -116,6 +116,15 @@ config MSM_SOC_REV_A
 endif
 endchoice
 
+config ENABLE_OVERCLOCK
+	bool "Enable Overclock?"
+	default n
+
+config ENABLE_EXTREME_HIGH_FREQUENCIES
+	bool "Enable extreme high frequencies (DANGEROUS)"
+	depends on ENABLE_OVERCLOCK
+	default n
+
 config  ARCH_MSM_ARM11
 	bool
 config  ARCH_MSM_SCORPION

@@ -96,6 +96,15 @@ static struct pll pll2_tbl[] = {
 	{  53, 1, 3, 0 }, /* 1024 MHz */
 	{ 125, 0, 1, 1 }, /* 1200 MHz */
 	{  73, 0, 1, 0 }, /* 1401 MHz */
+#ifdef CONFIG_ENABLE_OVERCLOCK
+	{  79,  0, 1, 0 },  /* 1516 MHz */
+	{  84,  0, 1, 0 },  /* 1612 MHz */
+	{  94,  0, 1, 0 },  /* 1804 MHz */
+#ifdef CONFIG_ENABLE_EXTREME_HIGH_FREQUENCIES
+	{  100, 0, 1, 0 },  /* 1920 MHz */
+	{  104, 0, 1, 0 },  /* 1997 MHz */
+#endif
+#endif
 };
 
 /* Use negative numbers for sources that can't be enabled/disabled */
@@ -124,6 +133,15 @@ static struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ 1, 1024000, PLL_2, 3, 0, UINT_MAX, 1200, VDD_RAW(1200), &pll2_tbl[1]},
 	{ 1, 1200000, PLL_2, 3, 0, UINT_MAX, 1200, VDD_RAW(1200), &pll2_tbl[2]},
 	{ 1, 1401600, PLL_2, 3, 0, UINT_MAX, 1250, VDD_RAW(1250), &pll2_tbl[3]},
+#ifdef CONFIG_ENABLE_OVERCLOCK
+	{ 1, 1516800, PLL_2,    3, 0,    UINT_MAX,  1300, VDD_RAW(1300), &pll2_tbl[4]},
+	{ 1, 1612800, PLL_2,    3, 0,    UINT_MAX,  1350, VDD_RAW(1350), &pll2_tbl[5]},
+#ifdef CONFIG_ENABLE_EXTREME_HIGH_FREQUENCIES
+	{ 1, 1804800, PLL_2,    3, 0,    UINT_MAX,  1350, VDD_RAW(1400), &pll2_tbl[6]},
+	{ 1, 1920000, PLL_2,    3, 0,    UINT_MAX,  1400, VDD_RAW(1400), &pll2_tbl[7]},
+	{ 1, 1996800, PLL_2,    3, 0,    UINT_MAX,  1400, VDD_RAW(1400), &pll2_tbl[8]},
+#endif
+#endif
 	{ 0 }
 };
 
@@ -459,20 +477,27 @@ static inline void setup_cpufreq_table(void) { }
 void __init pll2_fixup(void)
 {
 	struct clkctl_acpu_speed *speed = acpu_freq_tbl;
+#ifndef CONFIG_ENABLE_OVERCLOCK
 	u8 pll2_l = readl(PLL2_L_VAL_ADDR) & 0xFF;
+#endif
 
 	for ( ; speed->acpu_clk_khz; speed++) {
 		if (speed->src != PLL_2)
 			backup_s = speed;
+#ifndef CONFIG_ENABLE_OVERCLOCK
 		if (speed->pll_rate && speed->pll_rate->l == pll2_l) {
 			speed++;
 			speed->acpu_clk_khz = 0;
 			return;
 		}
+#endif
 	}
-
+#ifndef CONFIG_ENABLE_OVERCLOCK
 	pr_err("Unknown PLL2 lval %d\n", pll2_l);
-	BUG();
+	BUG();	
+#else
+	return;
+#endif
 }
 
 #define RPM_BYPASS_MASK	(1 << 3)
