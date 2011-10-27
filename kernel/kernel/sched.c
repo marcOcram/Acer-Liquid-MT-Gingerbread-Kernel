@@ -9149,4 +9149,8 @@ void synchronize_sched_expedited(void)
 }
 EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
 
+#ifdef CONFIG_CPU_FREQ_GOV_SMOOTHASS
+EXPORT_SYMBOL_GPL(nr_running);
+#endif
+
 #endif /* #else #ifndef CONFIG_SMP */
