@@ -231,4 +231,9 @@ config ENABLE_ONE_PERCENT_BATTERY_STEPS
 	depends on BATTERY_MSM_A4
 	default n
 
+config ENABLE_ONE_PERCENT_BATTERY_STEPS_USB_CHARGE_FIX
+	bool "fix issue when loading with USB (98% bug)"
+	depends on ENABLE_ONE_PERCENT_BATTERY_STEPS
+	default y
+
 endif # POWER_SUPPLY

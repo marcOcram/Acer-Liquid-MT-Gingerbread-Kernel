@@ -440,11 +440,19 @@ acer_battery_table_type acer_battery_dsg_25C_500mA_table[] = {
 };
 
 acer_battery_table_type acer_battery_chg_25C_500mA_table[] = {
+#ifdef CONFIG_ENABLE_ONE_PERCENT_BATTERY_STEPS_USB_CHARGE_FIX
+	{4203, 100},
+	{4200, 99},
+	{4197, 98},
+	{4194, 97},
+	{4191, 96},
+#else
 	{4212, 100},
 	{4207, 99},
 	{4202, 98},
 	{4198, 97},
 	{4193, 96},
+#endif
 	{4188, 95},
 	{4182, 94},
 	{4176, 93},
