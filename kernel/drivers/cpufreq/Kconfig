@@ -148,6 +148,12 @@ config CPU_FREQ_DEFAULT_GOV_MINMAX
 	  frequency jumps does by the governor. This is aimed at maximizing
 	  both perfomance and battery life.
 
+config CPU_FREQ_DEFAULT_GOV_SMARTASS2
+	bool "smartass2"
+	select CPU_FREQ_GOV_SMARTASS2
+	help
+	 Use the CPUFreq governor 'smartassV2' as default.
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -263,6 +269,14 @@ config CPU_FREQ_GOV_MINMAX
 	  'minmax' - this driver tries to minimize the frequency jumps by limiting
 	  the the selected frequencies to either the min or the max frequency of
 	  the policy. The frequency is selected according to the load.
+
+	  If in doubt, say N.
+	  
+config CPU_FREQ_GOV_SMARTASS2
+	tristate "'smartassV2' cpufreq governor"
+	depends on CPU_FREQ
+	help
+	  'smartassV2' - a "smart" optimized governor for the hero!
 
 	  If in doubt, say N.
 	  
