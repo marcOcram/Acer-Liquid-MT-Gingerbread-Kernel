@@ -36,6 +36,8 @@
 #include "acpuclock.h"
 #include "spm.h"
 
+#define DEBUG			0
+
 #define SCSS_CLK_CTL_ADDR	(MSM_ACC_BASE + 0x04)
 #define SCSS_CLK_SEL_ADDR	(MSM_ACC_BASE + 0x08)
 
@@ -57,6 +59,22 @@
 #define VDD_RAW(mv) (((MV(mv) / V_STEP) - 30) | VREG_DATA)
 
 #define MAX_AXI_KHZ 192000
+
+#ifdef CONFIG_ENABLE_UNDERVOLT_CONTROL
+/* Undervolt */
+#ifdef CONFIG_ENABLE_OVERCLOCK
+#ifdef CONFIG_ENABLE_EXTREME_HIGH_FREQUENCIES
+extern int voltages_mV[13];
+#else
+extern int voltages_mV[10];
+#endif
+#else
+extern int voltages_mV[5];
+#endif
+
+const unsigned long undervoltMin = 750;
+const unsigned long undervoltMax = 1450;
+#endif
 
 struct clock_state {
 	struct clkctl_acpu_speed	*current_speed;
@@ -161,6 +179,31 @@ unsigned long acpuclk_wait_for_irq(void)
 	return ret;
 }
 
+#ifdef CONFIG_ENABLE_UNDERVOLT_CONTROL
+static void acpu_freq_table_vdd_update(void)
+{
+	struct clkctl_acpu_speed *table;
+	int i = 0, j = 0;
+
+	for(table = acpu_freq_tbl; table->acpu_clk_khz != 0; table++){
+		if(table->use_for_scaling == 1){
+			if(i < sizeof(voltages_mV)/sizeof(voltages_mV[0])){
+				if(voltages_mV[i] != table->vdd_mv && voltages_mV[i] >= undervoltMin && voltages_mV[i] <= undervoltMax && voltages_mV[i] % V_STEP == 0){
+					table->vdd_mv = voltages_mV[i];
+					table->vdd_raw = VDD_RAW(voltages_mV[i]);
+					pr_info("ACPU voltage for %d KHz set to %d mV\n", table->acpu_clk_khz, table->vdd_mv);
+				}					
+			}
+			i++;
+		}
+		j++;
+	}
+	#if DEBUG
+	pr_info("TL: %d - %d\n", j, i);
+	#endif
+}
+#endif
+
 static int acpuclk_set_acpu_vdd(struct clkctl_acpu_speed *s)
 {
 	int ret = msm_spm_set_vdd(0, s->vdd_raw);
@@ -242,9 +285,15 @@ int acpuclk_set_rate(int cpu, unsigned long rate, enum setrate_reason reason)
 	}
 
 	if (reason == SETRATE_CPUFREQ) {
+#ifdef CONFIG_ENABLE_UNDERVOLT_CONTROL
+		acpu_freq_table_vdd_update();
+#endif
 		/* Increase VDD if needed. */
 		if (tgt_s->vdd_mv > strt_s->vdd_mv) {
 			rc = acpuclk_set_acpu_vdd(tgt_s);
+			#if DEBUG
+			pr_info("ACPU VDD increased from %d to %d", strt_s->vdd_mv, tgt_s->vdd_mv);
+			#endif
 			if (rc < 0) {
 				pr_err("ACPU VDD increase to %d mV failed "
 					"(%d)\n", tgt_s->vdd_mv, rc);
@@ -318,7 +367,14 @@ int acpuclk_set_rate(int cpu, unsigned long rate, enum setrate_reason reason)
 
 	/* Drop VDD level if we can. */
 	if (tgt_s->vdd_mv < strt_s->vdd_mv) {
+#ifdef CONFIG_ENABLE_UNDERVOLT_CONTROL
+		acpu_freq_table_vdd_update();
+#endif
 		res = acpuclk_set_acpu_vdd(tgt_s);
+		#if DEBUG
+		pr_info("ACPU VDD decreased from %d to %d\n", strt_s->vdd_mv, tgt_s->vdd_mv);
+		pr_info("ACPU: 122:%d-245:%d-368:%d-768:%d-806:%d-1024:%d-1200:%d-1400:%d-1516:%d-1612:%d", voltages_mV[0], voltages_mV[1], voltages_mV[2], voltages_mV[3], voltages_mV[4], voltages_mV[5], voltages_mV[6], voltages_mV[7], voltages_mV[8], voltages_mV[9]);
+		#endif
 		if (res)
 			pr_warning("ACPU VDD decrease to %d mV failed (%d)\n",
 					tgt_s->vdd_mv, res);

@@ -124,6 +124,10 @@ config ENABLE_EXTREME_HIGH_FREQUENCIES
 	bool "Enable extreme high frequencies (DANGEROUS)"
 	depends on ENABLE_OVERCLOCK
 	default n
+	
+config ENABLE_UNDERVOLT_CONTROL
+	bool "Enable Voltages Control"
+	default n
 
 config  ARCH_MSM_ARM11
 	bool

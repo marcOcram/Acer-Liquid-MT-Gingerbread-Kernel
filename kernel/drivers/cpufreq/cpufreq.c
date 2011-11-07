@@ -32,6 +32,17 @@
 #define dprintk(msg...) cpufreq_debug_printk(CPUFREQ_DEBUG_CORE, \
 						"cpufreq-core", msg)
 
+/* Undervolt */
+#ifdef CONFIG_ENABLE_OVERCLOCK
+#ifdef CONFIG_ENABLE_EXTREME_HIGH_FREQUENCIES
+int voltages_mV[13] = {900, 900, 900, 1050, 1100, 1200, 1200, 1250, 1300, 1300, 1400, 1400, 1400};
+#else
+int voltages_mV[10] = {900, 900, 900, 1050, 1100, 1200, 1200, 1250, 1300, 1350};
+#endif
+#else
+int voltages_mV[5] = {900, 900, 900, 1050, 1100};
+#endif
+
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
  * level driver of CPUFreq support, and its spinlock. This lock
@@ -651,6 +662,45 @@ static ssize_t show_scaling_setspeed(struct cpufreq_policy *policy, char *buf)
 	return policy->governor->show_setspeed(policy, buf);
 }
 
+#ifdef CONFIG_ENABLE_UNDERVOLT_CONTROL
+/*
+ * sysfs interface for undervolt control
+ */
+
+static ssize_t show_voltages_mV_table(struct cpufreq_policy *policy, char *buf)
+{
+#ifdef CONFIG_ENABLE_OVERCLOCK
+#ifdef CONFIG_ENABLE_EXTREME_HIGH_FREQUENCIES
+return sprintf(buf, "122 MHz: %d mV\n245 MHz: %d mV\n368 MHz: %d mV\n768 MHz: %d mV\n806 MHz: %d mV\n1024 MHz: %d mV\n1200 MHz: %d mV\n1400 MHz: %d mV\n1516 MHz: %d mV\n1612 MHz: %d mV\n1804 MHz: %d mV\n1920 MHz: %d mV\n1996 MHz: %d mV\n", voltages_mV[0], voltages_mV[1], voltages_mV[2], voltages_mV[3], voltages_mV[4], voltages_mV[5], voltages_mV[6], voltages_mV[7], voltages_mV[8], voltages_mV[9], voltages_mV[10], voltages_mV[11], voltages_mV[12]);
+#else
+return sprintf(buf, "122 MHz: %d mV\n245 MHz: %d mV\n368 MHz: %d mV\n768 MHz: %d mV\n806 MHz: %d mV\n1024 MHz: %d mV\n1200 MHz: %d mV\n1400 MHz: %d mV\n1516 MHz: %d mV\n1612 MHz: %d mV\n", voltages_mV[0], voltages_mV[1], voltages_mV[2], voltages_mV[3], voltages_mV[4], voltages_mV[5], voltages_mV[6], voltages_mV[7], voltages_mV[8], voltages_mV[9]);
+#endif
+#else
+return sprintf(buf, "122 MHz: %d mV\n245 MHz: %d mV\n368 MHz: %d mV\n768 MHz: %d mV\n806 MHz: %d mV\n", voltages_mV[0], voltages_mV[1], voltages_mV[2], voltages_mV[3], voltages_mV[4]);
+#endif
+	
+}
+
+static ssize_t store_voltages_mV_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+
+#ifdef CONFIG_ENABLE_OVERCLOCK
+#ifdef CONFIG_ENABLE_EXTREME_HIGH_FREQUENCIES
+ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d %d %d", &voltages_mV[0], &voltages_mV[1], &voltages_mV[2], &voltages_mV[3], &voltages_mV[4], &voltages_mV[5], &voltages_mV[6], &voltages_mV[7], &voltages_mV[8], &voltages_mV[9], voltages_mV[10], voltages_mV[11], voltages_mV[12]);
+#else
+ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d", &voltages_mV[0], &voltages_mV[1], &voltages_mV[2], &voltages_mV[3], &voltages_mV[4], &voltages_mV[5], &voltages_mV[6], &voltages_mV[7], &voltages_mV[8], &voltages_mV[9]);
+#endif
+#else
+ret = sscanf(buf, "%d %d %d %d %d", &voltages_mV[0], &voltages_mV[1], &voltages_mV[2], &voltages_mV[3], &voltages_mV[4]);
+#endif	
+	if(ret != (sizeof(voltages_mV)/sizeof(voltages_mV[0])))
+		return -EINVAL;
+	else
+		return count;	
+}
+#endif
+
 /**
  * show_scaling_driver - show the current cpufreq HW/BIOS limitation
  */
@@ -680,6 +730,9 @@ cpufreq_freq_attr_rw(scaling_min_freq);
 cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
+#ifdef CONFIG_ENABLE_UNDERVOLT_CONTROL
+cpufreq_freq_attr_rw(voltages_mV_table);
+#endif
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -693,6 +746,9 @@ static struct attribute *default_attrs[] = {
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
+#ifdef CONFIG_ENABLE_UNDERVOLT_CONTROL
+	&voltages_mV_table.attr,
+#endif
 	NULL
 };
 
