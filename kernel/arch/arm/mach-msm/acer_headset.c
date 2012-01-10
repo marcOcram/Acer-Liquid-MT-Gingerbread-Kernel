@@ -57,9 +57,11 @@
 #else
 #define ACER_HS_DBG(fmt, arg...) do {} while (0)
 #endif
-
+#ifdef CONFIG_CYANOGENMOD
+#define ACER_HS_DRIVER_NAME 			"h2w"
+#else
 #define ACER_HS_DRIVER_NAME 			"acer-hs"
-
+#endif
 #define PM8058_GPIO_PM_TO_SYS(pm_gpio)	(pm_gpio + NR_GPIO_IRQS)
 
 bool control;
@@ -270,7 +272,11 @@ static int acer_hs_probe(struct platform_device *pdev)
 	hr->debounce_time = ktime_set(0, 500000000);  /* 500 ms */
 
 	INIT_WORK(&short_wq, acer_update_state_work);
+#ifdef CONFIG_CYANOGENMOD
+	hr->sdev.name = "h2w";
+#else
 	hr->sdev.name = "acer-hs";
+#endif
 	hr->sdev.print_name = acer_hs_print_name;
 	hr->sdev.print_state = acer_hs_print_state;
 	hr->headsetOn = false;
@@ -326,9 +332,17 @@ err_get_hs_detect_irq_num_failed:
 err_request_detect_gpio:
 	gpio_free(hr->det);
 err_switch_dev_register:
+#ifdef CONFIG_CYANOGENMOD
+	pr_err("h2w: Failed to register driver\n");
+#else
 	pr_err("ACER-HS: Failed to register driver\n");
+#endif
 err_acer_hs_dev:
+#ifdef CONFIG_CYANOGENMOD
+	pr_err("h2w: Failed to register MISC h2w driver");
+#else
 	pr_err("ACER-HS: Failed to register MISC acer-hs driver");
+#endif
 
 	return ret;
 }

@@ -23,6 +23,10 @@ config CONSTRUCTORS
 
 menu "General setup"
 
+config CYANOGENMOD
+	bool "compiles for Cyanogen Mod"
+	default n
+
 config EXPERIMENTAL
 	bool "Prompt for development and/or incomplete code/drivers"
 	---help---
