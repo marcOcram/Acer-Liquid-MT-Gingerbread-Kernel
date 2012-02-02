@@ -610,6 +610,7 @@ static int __devinit hs_probe(struct platform_device *pdev)
 	hs = kzalloc(sizeof(struct msm_handset), GFP_KERNEL);
 	if (!hs)
 		return -ENOMEM;
+
 #ifdef CONFIG_CYANOGENMOD
 	hs->sdev.name	= "acer-hs";
 #else

@@ -242,9 +242,11 @@ struct mmc_host {
 	} perf;
 #endif
 
+#if defined(CONFIG_ACER_MACH_A4) || defined(CONFIG_ACER_MACH_A5)
 /* ATHENV*/
     int    last_suspend_error;
 /* ATHENV*/
+#endif
 
 	unsigned long		private[0] ____cacheline_aligned;
 };

@@ -44,7 +44,6 @@
 #include "mdp4.h"
 
 #define MDP_SYNC_CFG_0		0x100
-#define MDP_SYNC_THRESH_0	0x200
 #define MDP_SYNC_STATUS_0	0x10c
 #define MDP_SYNC_CFG_1		0x104
 #define MDP_SYNC_STATUS_1	0x110
@@ -52,8 +51,11 @@
 #define MDP_SEC_VSYNC_OUT_CTRL	0x11C
 #define MDP_VSYNC_SEL		0x124
 #define MDP_PRIM_VSYNC_INIT_VAL	0x128
-#define MDP_SYNC_THRESH_1	0x204
 #define MDP_SEC_VSYNC_INIT_VAL	0x12C
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
+#define MDP_SYNC_THRESH_0	0x200
+#define MDP_SYNC_THRESH_1	0x204
+#endif
 #else
 #define MDP_SYNC_CFG_0		0x300
 #define MDP_SYNC_STATUS_0	0x30c
@@ -144,8 +146,10 @@ static void mdp_set_vsync(unsigned long data)
 
 	pdata = (struct msm_fb_panel_data *)mfd->pdev->dev.platform_data;
 
+#ifdef MDP_HW_VSYNC
 	vsync_mfd = mfd;
 	init_timer(&mfd->vsync_resync_timer);
+#endif
 
 	if ((pdata) && (pdata->set_vsync_notifier == NULL))
 		return;
@@ -163,27 +167,32 @@ static void mdp_set_vsync(unsigned long data)
 		     mfd->panel_info.lcd.vsync_enable, mfd->panel_power_on,
 		     mfd->vsync_handler_pending);
 	}
-
+#ifdef MDP_HW_VSYNC
 	mutex_lock(&vsync_timer_lock);
 	if (!timer_shutdown_flag) {
+#endif
 		mfd->vsync_resync_timer.function = mdp_set_vsync;
 		mfd->vsync_resync_timer.data = data;
 		mfd->vsync_resync_timer.expires =
 			jiffies + mfd->panel_info.lcd.vsync_notifier_period;
 		add_timer(&mfd->vsync_resync_timer);
+#ifdef MDP_HW_VSYNC
 	}
 	mutex_unlock(&vsync_timer_lock);
+#endif
 }
 
 static void mdp_vsync_handler(void *data)
 {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)data;
 
+#ifdef MDP_HW_SYNC
 	if (vsync_clk_status == 0) {
 		pr_debug("Warning: vsync clk is disabled\n");
 		mfd->vsync_handler_pending = FALSE;
 		return;
 	}
+#endif
 
 	if (mfd->use_mdp_vsync) {
 #ifdef MDP_HW_VSYNC
@@ -255,7 +264,9 @@ void mdp_config_vsync(struct msm_fb_data_type *mfd)
 		goto err_handle;
 	}
 
+#ifdef MDP_HW_VSYNC
 	vsync_clk_status = 0;
+#endif
 	if (mfd->panel_info.lcd.vsync_enable) {
 		mfd->total_porch_lines = mfd->panel_info.lcd.v_back_porch +
 		    mfd->panel_info.lcd.v_front_porch +
@@ -409,7 +420,9 @@ void mdp_config_vsync(struct msm_fb_data_type *mfd)
 			}
 		}
 #endif
+#ifdef MDP_HW_VSYNC
 		mdp_hw_vsync_clk_enable(mfd);
+#endif
 		mdp_set_vsync((unsigned long)mfd);
 	}
 

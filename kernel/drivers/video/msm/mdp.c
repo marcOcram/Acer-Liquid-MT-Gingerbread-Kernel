@@ -620,7 +620,9 @@ void mdp_pipe_ctrl(MDP_BLOCK_TYPE block, MDP_BLOCK_POWER_STATE state,
 				mdp_current_clk_on = FALSE;
 				dsb();
 				/* turn off MDP clks */
+#ifdef MDP_HW_VSYNC
 				mdp_vsync_clk_disable();
+#endif
 				for (i = 0; i < pdev_list_cnt; i++) {
 					pdata = (struct msm_fb_panel_data *)
 						pdev_list[i]->dev.platform_data;
@@ -673,7 +675,9 @@ void mdp_pipe_ctrl(MDP_BLOCK_TYPE block, MDP_BLOCK_POWER_STATE state,
 				clk_enable(mdp_pclk);
 				MSM_FB_DEBUG("MDP PCLK ON\n");
 			}
+#ifdef MDP_HW_VSYNC
 			mdp_vsync_clk_enable();
+#endif
 		}
 		up(&mdp_pipe_ctrl_mutex);
 	}

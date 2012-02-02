@@ -1556,6 +1556,7 @@ set_polling(struct device *dev, struct device_attribute *attr,
 }
 
  /* ATHENV +++ */
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
  static ssize_t
 set_detect_change(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
@@ -1570,6 +1571,7 @@ set_detect_change(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR(detect_change, S_IRUGO | S_IWUSR,
 		NULL, set_detect_change);
+#endif
  /* ATHENV --- */
 
 static DEVICE_ATTR(polling, S_IRUGO | S_IWUSR,
@@ -1577,7 +1579,9 @@ static DEVICE_ATTR(polling, S_IRUGO | S_IWUSR,
 static struct attribute *dev_attrs[] = {
 	&dev_attr_polling.attr,
 /* ATHENV +++ */
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
 	&dev_attr_detect_change.attr,
+#endif
 /* ATHENV --- */
 	NULL,
 };
@@ -1711,7 +1715,9 @@ static void msmsdcc_req_tout_timer_hdlr(unsigned long data)
 	spin_unlock_irqrestore(&host->lock, flags);
 }
 
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
 extern bool vreg_wlan_power(int on);
+#endif
 static int
 msmsdcc_probe(struct platform_device *pdev)
 {
@@ -1887,8 +1893,10 @@ msmsdcc_probe(struct platform_device *pdev)
 	dsb();
 	host->mci_irqenable = MCI_IRQENABLE;
 
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
 	if (!strcmp(mmc_hostname(mmc), "mmc0"))
 		vreg_wlan_power(1);
+#endif
 	ret = request_irq(irqres->start, msmsdcc_irq, IRQF_SHARED,
 			  DRIVER_NAME " (cmd)", host);
 	if (ret)

@@ -110,6 +110,15 @@ static int mddi_auo_lcd_off(struct platform_device *pdev);
 static int mddi_auo_probe(struct platform_device *pdev);
 static int __init mddi_auo_init(void);
 wait_queue_head_t wait;
+#ifdef CONFIG_ENABLE_LCD_80HZ
+/*
+ * marcOcram // TechnoLover
+ * 
+ * Lower T2 means a higher LCD-Frequency
+ * 
+ */
+static int T2 = 250; //default one is 340
+#endif
 
 void send_mddi_auo_poweron_sequence(void)
 {
@@ -264,6 +273,11 @@ void send_mddi_auo_poweron_sequence(void)
 
 	/* FTE, enable vsync */
 	write_client_reg(0x3500, 0x10);
+
+#ifdef CONFIG_ENABLE_LCD_80HZ
+	write_client_reg(0xB101, (0xFF00 & T2) >> 8);
+	write_client_reg(0xB102, 0x00FF & T2);
+#endif
 
 	/* display on */
 	write_client_reg(0x2900, 0x00);

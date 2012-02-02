@@ -316,6 +316,8 @@ void *smem_find(unsigned id, unsigned size);
 void *smem_get_entry(unsigned id, unsigned *size);
 void smd_diag(void);
 
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
+
 typedef struct
 {
 	uint32_t magic_num;
@@ -465,5 +467,6 @@ typedef struct
 	unsigned short  read_p;
 	acer_queue_buf_t queue[Acer_MAX_QUEUE_SIZE];
 } acer_queue_t;
+#endif
 
 #endif

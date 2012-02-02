@@ -168,6 +168,7 @@ enum {
 	PCOM_CMD_FAIL_PROC_COMM_NOT_INIT,
 };
 
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
 enum {
 	ACER_SMSM_PROC_CMD_SD_UPDATE = 0x0,     // SD download
 	ACER_SMEM_PROC_CMD_CHG_RESET,           // Reset device in charging mode
@@ -188,6 +189,7 @@ enum {
 	ACER_SDDL_DIFF_ONLY,
 	ACER_SDDL_INVALID = 0xFFFFFFFF
 };
+#endif
 
 #ifdef CONFIG_MSM_PROC_COMM
 void msm_proc_comm_reset_modem_now(void);

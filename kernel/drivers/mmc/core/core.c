@@ -39,7 +39,9 @@
 #include "sdio_ops.h"
 #include <linux/pm.h>
 
+#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
 #define ATHR_MANUF_CODE		0x271
+#endif
 
 static struct workqueue_struct *workqueue;
 static struct wake_lock mmc_delayed_work_wake_lock;

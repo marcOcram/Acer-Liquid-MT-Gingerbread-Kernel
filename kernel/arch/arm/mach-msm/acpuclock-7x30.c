@@ -550,7 +550,7 @@ void __init pll2_fixup(void)
 	}
 #ifndef CONFIG_ENABLE_OVERCLOCK
 	pr_err("Unknown PLL2 lval %d\n", pll2_l);
-	BUG();	
+	BUG();
 #else
 	return;
 #endif
