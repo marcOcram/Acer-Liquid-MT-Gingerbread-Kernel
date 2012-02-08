@@ -10,6 +10,7 @@ configuration explanation with "make menuconfig":
 6)	How to compile kernel for CyanogenMod?
 7)	How to enable .config support in /proc/?
 8)	How to change default governor and to add governors?
+9)	How to enable audio headphone boost?
 
 #
 # 1) How to enable 1% battery steps?
@@ -77,3 +78,9 @@ Then go to "Enable access to .config through /proc/config.gz" and press "y".
 #
 
 Go to "CPU Power Management" and choose your settings.
+
+#
+# 9)	How to enable audio headphone boost?
+#
+
+Go to "System Type => boost headphone volume" and press "y".

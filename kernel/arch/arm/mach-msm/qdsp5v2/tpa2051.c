@@ -135,10 +135,18 @@ static void tpa2051_arg_init(void)
 	tpa2051_set_control(1, 0, 0);
 	tpa2051_set_control(1, 1, 16);//0x10
 	tpa2051_set_control(1, 2, 33);//0x21
+#ifdef CONFIG_AUDIO_TPA2051_BOOST_HEADPHONE
+	tpa2051_set_control(1, 3, 87);//0x57
+#else
 	tpa2051_set_control(1, 3, 84);//0x54
+#endif
 	tpa2051_set_control(1, 4, 10);//0x0A
 	tpa2051_set_control(1, 5, 141);//0x8D
+#ifdef CONFIG_AUDIO_TPA2051_BOOST_HEADPHONE
+	tpa2051_set_control(1, 6, 13);//0xD
+#else
 	tpa2051_set_control(1, 6, 173);//0xAD
+#endif
 
 	tpa_rBuf[0] = 1;
 	i2c_read(client, tpa_rBuf, 7);
@@ -372,7 +380,11 @@ int tpa2051_headset_switch(int command)
 		tpa2051_set_control(1, 1, 12);//0xC
 		tpa2051_set_control(1, 2, 33);//0x21
 		tpa2051_set_control(1, 4, 109);//0x6D
+#ifdef CONFIG_AUDIO_TPA2051_BOOST_HEADPHONE
+		tpa2051_set_control(1, 5, 89);//0x59
+#else
 		tpa2051_set_control(1, 5, 83);//0x53
+#endif
 	} else {
 		pr_debug("tpa2051_headset_switch = false \n");
 		tpa2051_set_control(1, 1, 16);//0x10

@@ -1223,13 +1223,13 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	     mfd->index, fbi->var.xres, fbi->var.yres, fbi->fix.smem_len);
 
 #ifdef CONFIG_FB_MSM_LOGO
-#if !defined(CONFIG_MACH_ACER_A5)
-	if (!load_565rle_image(INIT_IMAGE_FILE)) ;	/* Flip buffer */
-#else
+#if defined(CONFIG_MACH_ACER_A5)
 	if (load_565rle_image(INIT_IMAGE_FILE) == 0 && mfd->panel_info.type != DTV_PANEL) {
 		pr_emerg("show Logo\n");
 		msm_fb_blank_sub(FB_BLANK_UNBLANK, mfd->fbi, true);
 	}
+#else
+	if (!load_565rle_image(INIT_IMAGE_FILE)) ;	/* Flip buffer */
 #endif
 #endif
 	ret = 0;

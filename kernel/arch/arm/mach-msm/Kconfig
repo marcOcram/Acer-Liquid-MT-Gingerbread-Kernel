@@ -1142,6 +1142,13 @@ config AUDIO_TPA2051
 	default n
 	help
 	  If you say yes here you get support for audio tpa2051.
+	  
+config AUDIO_TPA2051_BOOST_HEADPHONE
+	bool "boost headphone volume"
+	depends on AUDIO_TPA2051
+	default n
+	help
+		If you say yes here you get a louder volume for headphones.
 
 config ACER_HEADSET
 	tristate "ACER Headset detection driver"
