@@ -11,9 +11,10 @@ configuration explanation with "make menuconfig":
 7)	How to enable .config support in /proc/?
 8)	How to change default governor and to add governors?
 9)	How to enable audio headphone boost?
-10)	Hwo to enable GPU Overclock?
-11)	Hwo to enable GPU Undervolt?
-12)	Hwo to change LED Flash Time?
+10)	How to enable GPU Overclock?
+11)	How to enable GPU Undervolt?
+12)	How to change LED Flash Time?
+13)	How to add ext3/ext4?
 
 #
 # 1) How to enable 1% battery steps?
@@ -105,3 +106,10 @@ Go to "System Type => Enable GPU Undervolt" and press "y".
 #
 
 Go to "System Type => LED Flash Speed" and select your desired Speed.
+
+#
+# 13)	How to add ext3/ext4?
+#
+
+Go to "File systems => Ext3 journaling file system support" and press "y".
+Go to "File systems => The extended (ext4) filesystem" and press "y".
