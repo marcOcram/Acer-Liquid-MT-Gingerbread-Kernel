@@ -128,6 +128,41 @@ config ENABLE_EXTREME_HIGH_FREQUENCIES
 config ENABLE_UNDERVOLT_CONTROL
 	bool "Enable Voltages Control"
 	default n
+	
+config GPU_OVERCLOCK
+	bool "Enable GPU Overclock?"
+	default n
+	
+config GPU_UNDERVOLT
+	bool "Enable GPU Undervolt?"
+	default n
+	
+choice
+	prompt "LED Flash Speed"
+	default LED_FLASH_SLOW
+
+config LED_FLASH_SLOW
+	bool "Slow"
+
+config LED_FLASH_NORMAL
+	bool "Normal"
+
+config LED_FLASH_FAST
+	bool "Fast"
+
+config LED_FLASH_SLOW2X
+	bool "2x Slow"
+
+config LED_FLASH_NORMAL2X
+	bool "2x Normal"
+
+config LED_FLASH_FAST2X
+	bool "2x Fast"
+	
+config LED_FLASH_ALWAYS_ON
+	bool "Always On"
+
+endchoice
 
 config  ARCH_MSM_ARM11
 	bool

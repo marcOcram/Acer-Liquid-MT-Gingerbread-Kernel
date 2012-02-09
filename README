@@ -11,6 +11,9 @@ configuration explanation with "make menuconfig":
 7)	How to enable .config support in /proc/?
 8)	How to change default governor and to add governors?
 9)	How to enable audio headphone boost?
+10)	Hwo to enable GPU Overclock?
+11)	Hwo to enable GPU Undervolt?
+12)	Hwo to change LED Flash Time?
 
 #
 # 1) How to enable 1% battery steps?
@@ -84,3 +87,21 @@ Go to "CPU Power Management" and choose your settings.
 #
 
 Go to "System Type => boost headphone volume" and press "y".
+
+#
+# 10)	Hwo to enable GPU Overclock?
+#
+
+Go to "System Type => Enable GPU Overclock" and press "y".
+
+#
+# 11)	Hwo to enable GPU Undervolt?
+#
+
+Go to "System Type => Enable GPU Undervolt" and press "y".
+
+#
+# 12)	Hwo to change LED Flash Time?
+#
+
+Go to "System Type => LED Flash Speed" and select your desired Speed.

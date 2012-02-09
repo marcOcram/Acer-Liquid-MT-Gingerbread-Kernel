@@ -4027,21 +4027,87 @@ static struct tca6507_pin_config tca6507_pin[] = {
 
 static struct tca6507_platform_data tca6507_data = {
 	.pwm0 = {
-		.fade_on	= TCA6507_TIME_3,
-		.fully_on = TCA6507_TIME_0,
-		.fade_off = TCA6507_TIME_3,
-		.fir_fully_off = TCA6507_TIME_8,
-		.sec_fully_off = TCA6507_TIME_8,
-		.max_intensity = TCA6507_MAX_INTENSITY,
+		.fade_on	= TCA6507_TIME_3,			//	Time for FadeOn
+		.fully_on = TCA6507_TIME_0,				//	Time for Keep on
+		.fade_off = TCA6507_TIME_3,				//	Time for FadeOff
+		.fir_fully_off = TCA6507_TIME_8,		//	Time for first pause
+		.sec_fully_off = TCA6507_TIME_8,		//	Time for second pause
+		.max_intensity = TCA6507_MAX_INTENSITY,	//	Intensity of Flash
 	},
+
+#if defined(CONFIG_LED_FLASH_SLOW)
 	.pwm1 = {
-		.fade_on = TCA6507_TIME_5,
+		.fade_on = TCA6507_TIME_8,
 		.fully_on = TCA6507_TIME_0,
-		.fade_off = TCA6507_TIME_5,
+		.fade_off = TCA6507_TIME_8,
 		.fir_fully_off = TCA6507_TIME_12,
 		.sec_fully_off = TCA6507_TIME_12,
 		.max_intensity = TCA6507_MAX_INTENSITY,
 	},
+#elif defined(CONFIG_LED_FLASH_NORMAL)
+	.pwm1 = {
+		.fade_on = TCA6507_TIME_7,
+		.fully_on = TCA6507_TIME_4,
+		.fade_off = TCA6507_TIME_7,
+		.fir_fully_off = TCA6507_TIME_6,
+		.sec_fully_off = TCA6507_TIME_6,
+		.max_intensity = TCA6507_MAX_INTENSITY,
+	},
+#elif defined(CONFIG_LED_FLASH_FAST)
+	.pwm1 = {
+		.fade_on = TCA6507_TIME_6,
+		.fully_on = TCA6507_TIME_4,
+		.fade_off = TCA6507_TIME_6,
+		.fir_fully_off = TCA6507_TIME_4,
+		.sec_fully_off = TCA6507_TIME_4,
+		.max_intensity = TCA6507_MAX_INTENSITY,
+	},
+#elif defined(CONFIG_LED_FLASH_SLOW2X)
+	.pwm1 = {
+		.fade_on = TCA6507_TIME_8,
+		.fully_on = TCA6507_TIME_4,
+		.fade_off = TCA6507_TIME_8,
+		.fir_fully_off = TCA6507_TIME_0,
+		.sec_fully_off = TCA6507_TIME_12,
+		.max_intensity = TCA6507_MAX_INTENSITY,
+	},
+#elif defined(CONFIG_LED_FLASH_NORMAL2X)
+	.pwm1 = {
+		.fade_on = TCA6507_TIME_7,
+		.fully_on = TCA6507_TIME_4,
+		.fade_off = TCA6507_TIME_7,
+		.fir_fully_off = TCA6507_TIME_0,
+		.sec_fully_off = TCA6507_TIME_8,
+		.max_intensity = TCA6507_MAX_INTENSITY,
+	},
+#elif defined(CONFIG_LED_FLASH_FAST2X)
+	.pwm1 = {
+		.fade_on = TCA6507_TIME_6,
+		.fully_on = TCA6507_TIME_4,
+		.fade_off = TCA6507_TIME_6,
+		.fir_fully_off = TCA6507_TIME_0,
+		.sec_fully_off = TCA6507_TIME_6,
+		.max_intensity = TCA6507_MAX_INTENSITY,
+	},
+#elif defined(CONFIG_LED_FLASH_ALWAYS_ON)
+	.pwm1 = {
+		.fade_on = TCA6507_TIME_0,
+		.fully_on = TCA6507_TIME_12,
+		.fade_off = TCA6507_TIME_0,
+		.fir_fully_off = TCA6507_TIME_0,
+		.sec_fully_off = TCA6507_TIME_0,
+		.max_intensity = TCA6507_MAX_INTENSITY,
+	},
+#else
+	.pwm1 = {
+		.fade_on = TCA6507_TIME_8,
+		.fully_on = TCA6507_TIME_0,
+		.fade_off = TCA6507_TIME_8,
+		.fir_fully_off = TCA6507_TIME_12,
+		.sec_fully_off = TCA6507_TIME_12,
+		.max_intensity = TCA6507_MAX_INTENSITY,
+	},
+#endif
 	.pin_config = tca6507_pin,
 	.num_output_pins = ARRAY_SIZE(tca6507_pin),
 	.gpio_enable = 125,
@@ -5287,8 +5353,12 @@ static struct kgsl_platform_data kgsl_pdata = {
 	.max_grp2d_freq = 0,
 	.min_grp2d_freq = 0,
 	.set_grp2d_async = NULL, /* HW workaround, run Z180 SYNC @ 192 MHZ */
+#ifdef CONFIG_GPU_OVERCLOCK
+	.max_grp3d_freq = 368640000,
+#else
 	.max_grp3d_freq = 245760000,
-	.min_grp3d_freq = 192 * 1000*1000,
+#endif
+	.min_grp3d_freq = 192000000,
 	.set_grp3d_async = set_grp3d_async,
 	.imem_clk_name = "imem_clk",
 	.grp3d_clk_name = "grp_clk",
