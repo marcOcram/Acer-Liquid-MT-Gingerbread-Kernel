@@ -5354,7 +5354,7 @@ static struct kgsl_platform_data kgsl_pdata = {
 	.min_grp2d_freq = 0,
 	.set_grp2d_async = NULL, /* HW workaround, run Z180 SYNC @ 192 MHZ */
 #ifdef CONFIG_GPU_OVERCLOCK
-	.max_grp3d_freq = 368640000,
+	.max_grp3d_freq = 384000000,
 #else
 	.max_grp3d_freq = 245760000,
 #endif

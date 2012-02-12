@@ -238,7 +238,7 @@ static struct clk_freq_tbl clk_tbl_grp[] = {
 #ifdef CONFIG_GPU_UNDERVOLT
 	F_BASIC(192000000, PLL1,  4, LOW),
 #else
-	F_BASIC(192000000, PLL1,  4, LOW),
+	F_BASIC(192000000, PLL1,  4, NOMINAL),
 #endif
 	F_BASIC(245760000, PLL3,  3, HIGH),
 #ifdef CONFIG_GPU_OVERCLOCK
