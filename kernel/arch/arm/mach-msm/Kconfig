@@ -133,10 +133,6 @@ config GPU_OVERCLOCK
 	bool "Enable GPU Overclock?"
 	default n
 	
-config GPU_UNDERVOLT
-	bool "Enable GPU Undervolt?"
-	default n
-	
 choice
 	prompt "LED Flash Speed"
 	default LED_FLASH_SLOW
