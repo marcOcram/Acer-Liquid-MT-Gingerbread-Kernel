@@ -5,9 +5,14 @@ config ENABLE_VSYNC
 	bool "Enable VSync (30fps limit)"
 	default y
 
-config ENABLE_LCD_80HZ
-	bool "Change Frequency to 80 Hz for the LCD"
+config OVERRIDE_LCD_FREQUENCY
+	bool "Change Frequency of the LCD"
 	default n
+	
+config LCD_FREQUENCY_T2
+	int "T2 value 245 <= x <= 999"
+	depends on OVERRIDE_LCD_FREQUENCY
+	default 340
 
 config FB_MSM
 	tristate

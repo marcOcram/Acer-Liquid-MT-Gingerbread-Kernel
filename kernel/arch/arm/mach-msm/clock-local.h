@@ -245,4 +245,3 @@ void set_rate_mnd(struct clk_local *clk, struct clk_freq_tbl *nf);
 void set_rate_nop(struct clk_local *clk, struct clk_freq_tbl *nf);
 
 #endif /* __ARCH_ARM_MACH_MSM_CLOCK_LOCAL_H */
-
