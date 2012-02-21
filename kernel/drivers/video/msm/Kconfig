@@ -13,6 +13,11 @@ config LCD_FREQUENCY_T2
 	int "T2 value 245 <= x <= 999"
 	depends on OVERRIDE_LCD_FREQUENCY
 	default 340
+	
+config FIX_FPS
+	bool "Fix FPS issue"
+	depends on !ENABLE_VSYNC
+	default n
 
 config FB_MSM
 	tristate

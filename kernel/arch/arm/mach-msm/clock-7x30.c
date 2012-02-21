@@ -238,6 +238,8 @@ static struct clk_freq_tbl clk_tbl_grp[] = {
 	F_BASIC(192000000, PLL1,  4, NOMINAL),
 	F_BASIC(245760000, PLL3,  3, HIGH),
 #ifdef CONFIG_GPU_OVERCLOCK
+	F_BASIC(297000000, PLL4,  3, HIGH),
+	F_BASIC(368640000, PLL3,  2, HIGH),
 	F_BASIC(384000000, PLL1,  2, HIGH),
 #endif
 	/* Sync to AXI. Hence this "rate" is not fixed. */
@@ -282,11 +284,11 @@ static struct clk_freq_tbl clk_tbl_mdp_core[] = {
 
 static struct clk_freq_tbl clk_tbl_mdp_lcdc[] = {
 	F_MND16(24576000, LPXO, 1,   0,   0, NOMINAL),
-	F_MND16(30720000, PLL3, 4,   1,   6, NOMINAL),
-	F_MND16(32768000, PLL3, 3,   2,  15, NOMINAL),
-	F_MND16(36864000, PLL3, 4,   1,   5, NOMINAL),
-	F_MND16(40960000, PLL3, 2,   1,   9, NOMINAL),
-	F_MND16(73728000, PLL3, 2,   1,   5, NOMINAL),
+	F_MND16(30720000, PLL3, 4,   1,   6, NOMINAL), /* 737280000 / 4 * 1 / 6 = 30720000 */
+	F_MND16(32768000, PLL3, 3,   2,  15, NOMINAL), /* 737280000 / 3 * 2 / 15 = 32768000 */
+	F_MND16(36864000, PLL3, 4,   1,   5, NOMINAL), /* 737280000 / 4 * 1 / 5 = 36864000 */
+	F_MND16(40960000, PLL3, 2,   1,   9, NOMINAL), /* 737280000 / 2 * 1 / 9 = 40960000 */
+	F_MND16(73728000, PLL3, 2,   1,   5, NOMINAL), /* 737280000 / 2 * 1 / 5 = 73728000 */
 	F_END,
 };
 

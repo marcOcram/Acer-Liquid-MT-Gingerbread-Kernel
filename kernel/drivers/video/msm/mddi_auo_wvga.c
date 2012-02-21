@@ -112,14 +112,10 @@ static int __init mddi_auo_init(void);
 wait_queue_head_t wait;
 #ifdef CONFIG_OVERRIDE_LCD_FREQUENCY
 /*
- * marcOcram // TechnoLover
- * 
  * Lower T2 means a higher LCD-Frequency
- * 
  */
 
 static int T2 = CONFIG_LCD_FREQUENCY_T2;
-
 #endif
 
 void send_mddi_auo_poweron_sequence(void)
@@ -273,18 +269,15 @@ void send_mddi_auo_poweron_sequence(void)
 	write_client_reg(0x6A17, 0x01);
 #endif
 
+	/* FTE, enable vsync */
+	write_client_reg(0x3500, 0x10);
+
 #ifdef CONFIG_OVERRIDE_LCD_FREQUENCY
-	/* FTE, disable vsync */
-	write_client_reg(0x3400, 0x00);
 	if(T2 < 245 || T2 > 999){
 		T2 = 340;
 	}
-	pr_info("T2: %d\n", T2);
 	write_client_reg(0xB101, (0xFF00 & T2) >> 8);
 	write_client_reg(0xB102, 0x00FF & T2);
-#else
-	/* FTE, enable vsync */
-	write_client_reg(0x3500, 0x10);
 #endif
 
 	/* display on */
@@ -409,7 +402,7 @@ static int mddi_auo_probe(struct platform_device *pdev)
 
 static int __init mddi_auo_init(void)
 {
-	int ret;
+	int ret, clock;
 	struct msm_panel_info *pinfo;
 
 	pr_debug("[LCD_MDDI] %s (%d) ++ enter\n", __func__, __LINE__);
@@ -452,14 +445,13 @@ static int __init mddi_auo_init(void)
 		pinfo->bl_max = 255;		/* backlight MAX value */
 		pinfo->bl_min = 0;		/* backlight MIN value */
 #ifdef CONFIG_ENABLE_VSYNC
-		pinfo->clk_rate = 184320000;	/* clock setting, MAX 200MHz */
-		pinfo->clk_min =  184320000;
-		pinfo->clk_max =  184320000;
+		clock = 184320000;
 #else
-		pinfo->clk_rate = 200000000;	/* clock setting, MAX 200MHz */
-		pinfo->clk_min =  200000000;
-		pinfo->clk_max =  200000000;
+		clock = 200000000;
 #endif
+		pinfo->clk_rate = clock;	/* clock setting, MAX 200MHz */
+		pinfo->clk_min =  clock;
+		pinfo->clk_max =  clock;
 		pinfo->width = 47;		/* Actual size, in mm */
 		pinfo->height = 79;
 		pinfo->mddi.vdopkt = MDDI_DEFAULT_PRIM_PIX_ATTR;

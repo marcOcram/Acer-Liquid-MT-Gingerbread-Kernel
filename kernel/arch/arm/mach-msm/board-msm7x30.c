@@ -5903,13 +5903,19 @@ int mdp_core_clk_rate_table[] = {
 	122880000,
 	122880000,
 	122880000,
+#ifdef CONFIG_FIX_FPS
 	192000000,
+#endif
 };
 
 static struct msm_panel_common_pdata mdp_pdata = {
 	.hw_revision_addr = 0xac001270,
 	.gpio = 30,
+#ifdef CONFIG_FIX_FPS
+	.mdp_core_clk_rate = 192000000,
+#else
 	.mdp_core_clk_rate = 122880000,
+#endif
 	.mdp_core_clk_table = mdp_core_clk_rate_table,
 	.num_mdp_clk = ARRAY_SIZE(mdp_core_clk_rate_table),
 };
