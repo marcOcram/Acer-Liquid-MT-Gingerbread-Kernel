@@ -78,6 +78,10 @@
 	 | (MMU_CONFIG << MH_MMU_CONFIG__VGT_R1_CLNT_BEHAVIOR__SHIFT)	\
 	 | (MMU_CONFIG << MH_MMU_CONFIG__TC_R_CLNT_BEHAVIOR__SHIFT)	\
 	 | (MMU_CONFIG << MH_MMU_CONFIG__PA_W_CLNT_BEHAVIOR__SHIFT))
+	 
+#ifdef CONFIG_GPU_OVERCLOCK
+static int gpu_max_freq = 245760000;
+#endif
 
 static struct kgsl_yamato_device yamato_device = {
 	.dev = {
@@ -474,6 +478,55 @@ kgsl_yamato_getchipid(struct kgsl_device *device)
 	return chipid;
 }
 
+#ifdef CONFIG_GPU_OVERCLOCK
+
+static ssize_t gpu_max_freq_show(struct device *dev, struct device_attribute *attr,
+                       char *buf)
+{
+	int ret;
+
+	ret = sprintf(buf, "%d\n", gpu_max_freq);
+
+	return ret;
+}
+
+static ssize_t gpu_max_freq_store(struct device *dev, struct device_attribute *attr,
+                       const char *buf, size_t count)
+{
+	struct clk *clk;
+	struct platform_device *pdev = kgsl_driver.pdev;
+	struct kgsl_platform_data *pdata = pdev->dev.platform_data;
+	struct kgsl_device *device = kgsl_get_yamato_generic_device();
+	
+	sscanf(buf, "%d", &gpu_max_freq);
+	
+	if(gpu_max_freq < 192000000){
+		printk(KERN_WARNING "%s: invalid value for gpu_max_freq: %u\n", __func__, gpu_max_freq);
+		gpu_max_freq = 192000000;
+		return -EINVAL;
+	}else{
+		clk = clk_get(&pdev->dev, "grp_src_clk");
+		if (pdata->max_grp3d_freq) {
+			device->pwrctrl.clk_freq[KGSL_MIN_FREQ] =
+				clk_round_rate(clk, pdata->min_grp3d_freq);
+			if(gpu_max_freq > pdata->max_grp3d_freq){
+				device->pwrctrl.clk_freq[KGSL_MAX_FREQ] =
+					clk_round_rate(clk, gpu_max_freq);
+			}else{
+				device->pwrctrl.clk_freq[KGSL_MAX_FREQ] =
+					clk_round_rate(clk, pdata->max_grp3d_freq);
+			}
+			clk_set_rate(clk, device->pwrctrl.clk_freq[KGSL_MIN_FREQ]);
+		}
+	}
+
+	return count;
+}
+
+DEVICE_ATTR(gpu_max_freq, 0644, gpu_max_freq_show, gpu_max_freq_store);
+
+#endif
+
 int __init
 kgsl_yamato_init_pwrctrl(struct kgsl_device *device)
 {
@@ -481,6 +534,12 @@ kgsl_yamato_init_pwrctrl(struct kgsl_device *device)
 	struct clk *clk, *grp_clk;
 	struct platform_device *pdev = kgsl_driver.pdev;
 	struct kgsl_platform_data *pdata = pdev->dev.platform_data;
+
+#ifdef CONFIG_GPU_OVERCLOCK
+	if (device_create_file(&pdev->dev, &dev_attr_gpu_max_freq)) {
+		printk(KERN_WARNING "%s: device_create_file failed\n", __func__);
+	}
+#endif
 
 	/*acquire clocks */
 	BUG_ON(device->pwrctrl.grp_clk != NULL);
