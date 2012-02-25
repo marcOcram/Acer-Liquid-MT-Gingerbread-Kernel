@@ -275,12 +275,22 @@ static ssize_t store_mfreq(struct sysdev_class *class,
 
 static SYSDEV_CLASS_ATTR(mfreq, 0200, NULL, store_mfreq);
 
+#ifdef CONFIG_CYANOGENMOD
+static struct freq_attr *msm_cpufreq_attr[] = {  
+	&cpufreq_freq_attr_scaling_available_freqs,  		
+	NULL,
+};
+#endif
+
 static struct cpufreq_driver msm_cpufreq_driver = {
 	/* lps calculations are handled here. */
 	.flags		= CPUFREQ_STICKY | CPUFREQ_CONST_LOOPS,
 	.init		= msm_cpufreq_init,
 	.verify		= msm_cpufreq_verify,
 	.target		= msm_cpufreq_target,
+#ifdef CONFIG_CYANOGENMOD
+	.attr		= msm_cpufreq_attr,
+#endif
 	.name		= "msm",
 };
 

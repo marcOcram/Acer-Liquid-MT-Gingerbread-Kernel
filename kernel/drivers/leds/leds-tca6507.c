@@ -28,10 +28,17 @@ struct tca6507_select_control {
 };
 
 static const char *led_blink_texts[] = {
+#ifdef CONFIG_CYANOGENMOD
+	"0",
+	"1",
+	"2",
+	"3",
+#else
 	"Off",
 	"On",
 	"Fast-Blink",
 	"Slow-Blink",
+#endif
 };
 
 static int i2c_read(struct i2c_client *client, char *buf, int count)
