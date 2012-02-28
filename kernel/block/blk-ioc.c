@@ -5,6 +5,9 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/bio.h>
+#ifdef CONFIG_IOSCHED_BFQ
+#include <linux/bitmap.h>
+#endif
 #include <linux/blkdev.h>
 #include <linux/bootmem.h>	/* for max_pfn/max_low_pfn */
 #include <linux/slab.h>
@@ -16,13 +19,25 @@
  */
 static struct kmem_cache *iocontext_cachep;
 
+#ifdef CONFIG_IOSCHED_BFQ
+static void hlist_sched_dtor(struct io_context *ioc, struct hlist_head *list)
+#else
 static void cfq_dtor(struct io_context *ioc)
+#endif
 {
+#ifdef CONFIG_IOSCHED_BFQ
+	if (!hlist_empty(list)) {
+#else
 	if (!hlist_empty(&ioc->cic_list)) {
+#endif
 		struct cfq_io_context *cic;
+#ifdef CONFIG_IOSCHED_BFQ
+		cic = list_entry(list->first, struct cfq_io_context, cic_list);
+#else
 
 		cic = list_entry(ioc->cic_list.first, struct cfq_io_context,
 								cic_list);
+#endif
 		cic->dtor(ioc);
 	}
 }
@@ -40,7 +55,12 @@ int put_io_context(struct io_context *ioc)
 
 	if (atomic_long_dec_and_test(&ioc->refcount)) {
 		rcu_read_lock();
+#ifdef CONFIG_IOSCHED_BFQ
+		hlist_sched_dtor(ioc, &ioc->cic_list);
+		hlist_sched_dtor(ioc, &ioc->bfq_cic_list);
+#else
 		cfq_dtor(ioc);
+#endif
 		rcu_read_unlock();
 
 		kmem_cache_free(iocontext_cachep, ioc);
@@ -50,15 +70,27 @@ int put_io_context(struct io_context *ioc)
 }
 EXPORT_SYMBOL(put_io_context);
 
+#ifdef CONFIG_IOSCHED_BFQ
+static void hlist_sched_exit(struct io_context *ioc, struct hlist_head *list)
+#else
 static void cfq_exit(struct io_context *ioc)
+#endif
 {
 	rcu_read_lock();
 
+#ifdef CONFIG_IOSCHED_BFQ
+	if (!hlist_empty(list)) {
+#else
 	if (!hlist_empty(&ioc->cic_list)) {
+#endif
 		struct cfq_io_context *cic;
 
+#ifdef CONFIG_IOSCHED_BFQ
+		cic = list_entry(list->first, struct cfq_io_context, cic_list);
+#else
 		cic = list_entry(ioc->cic_list.first, struct cfq_io_context,
 								cic_list);
+#endif
 		cic->exit(ioc);
 	}
 	rcu_read_unlock();
@@ -75,7 +107,12 @@ void exit_io_context(struct task_struct *task)
 	task_unlock(task);
 
 	if (atomic_dec_and_test(&ioc->nr_tasks)) {
+#ifdef CONFIG_IOSCHED_BFQ
+		hlist_sched_exit(ioc, &ioc->cic_list);
+		hlist_sched_exit(ioc, &ioc->bfq_cic_list);
+#else
 		cfq_exit(ioc);
+#endif
 
 	}
 	put_io_context(ioc);
@@ -90,12 +127,20 @@ struct io_context *alloc_io_context(gfp_t gfp_flags, int node)
 		atomic_long_set(&ret->refcount, 1);
 		atomic_set(&ret->nr_tasks, 1);
 		spin_lock_init(&ret->lock);
+#ifdef CONFIG_IOSCHED_BFQ
+		bitmap_zero(ret->ioprio_changed, IOC_IOPRIO_CHANGED_BITS);
+#else		
 		ret->ioprio_changed = 0;
+#endif
 		ret->ioprio = 0;
 		ret->last_waited = 0; /* doesn't matter... */
 		ret->nr_batch_requests = 0; /* because this is 0 */
 		INIT_RADIX_TREE(&ret->radix_root, GFP_ATOMIC | __GFP_HIGH);
 		INIT_HLIST_HEAD(&ret->cic_list);
+#ifdef CONFIG_IOSCHED_BFQ
+		INIT_RADIX_TREE(&ret->bfq_radix_root, GFP_ATOMIC | __GFP_HIGH);
+		INIT_HLIST_HEAD(&ret->bfq_cic_list);
+#endif
 		ret->ioc_data = NULL;
 	}
 

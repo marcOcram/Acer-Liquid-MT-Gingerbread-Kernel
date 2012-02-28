@@ -12,11 +12,10 @@ configuration explanation with "make menuconfig":
 8)	How to change default governor and to add governors?
 9)	How to enable audio headphone boost?
 10)	How to enable GPU Overclock?
-11)	How to enable GPU Undervolt?
-12)	How to change LED Flash Time?
-13)	How to add ext3/ext4?
-14)	How to override the LCD frequency.
-15)	How to fix FPS issue.
+11)	How to change LED Flash Time?
+12)	How to add ext3/ext4?
+13)	How to override the LCD frequency.
+14)	How to fix FPS issue.
 
 #
 # 1) How to enable 1% battery steps?
@@ -98,33 +97,27 @@ Go to "System Type => boost headphone volume" and press "y".
 Go to "System Type => Enable GPU Overclock" and press "y".
 
 #
-# 11)	Hwo to enable GPU Undervolt?
-#
-
-Go to "System Type => Enable GPU Undervolt" and press "y".
-
-#
-# 12)	Hwo to change LED Flash Time?
+# 11)	Hwo to change LED Flash Time?
 #
 
 Go to "System Type => LED Flash Speed" and select your desired Speed.
 
 #
-# 13)	How to add ext3/ext4?
+# 12)	How to add ext3/ext4?
 #
 
 Go to "File systems => Ext3 journaling file system support" and press "y".
 Go to "File systems => The extended (ext4) filesystem" and press "y".
 
 #
-# 14)	How to override the LCD frequency.
+# 13)	How to override the LCD frequency.
 #
 
 Go to "Device Drivers => Graphics Support => Change Frequency of the LCD" and press "y".
 Next go to "T2 value" and enter your desired value.
 
 #
-# 15)	How to fix FPS issue.
+# 14)	How to fix FPS issue.
 #
 
 Go to "Device Drivers => Graphics Support => Fix FPS issue" and press "y".
