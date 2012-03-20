@@ -197,6 +197,17 @@ struct msmfb_img {
 	uint32_t format;
 };
 
+#ifdef CONFIG_MACH_ACER_A4
+struct dpp_ctrl {
+	/*
+	*'sharp_strength' has inputs = -128 <-> 127
+	*  Increasingly positive values correlate with increasingly sharper
+	*  picture. Increasingly negative values correlate with increasingly
+	*  smoothed picture.
+	*/
+	int8_t sharp_strength;
+};
+#endif
 struct mdp_overlay {
 	struct msmfb_img src;
 	struct mdp_rect src_rect;
@@ -208,6 +219,9 @@ struct mdp_overlay {
 	uint32_t flags;
 	uint32_t id;
 	uint32_t user_data[8];
+#ifdef CONFIG_MACH_ACER_A4
+	struct dpp_ctrl dpp;
+#endif
 };
 
 struct msmfb_overlay_3d {
