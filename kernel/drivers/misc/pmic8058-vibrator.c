@@ -43,7 +43,6 @@ struct pmic8058_vib {
 	struct timed_output_dev timed_dev;
 	spinlock_t lock;
 	struct work_struct work;
-	struct workqueue_struct *wq;
 
 	struct device *dev;
 	struct pmic8058_vibrator_pdata *pdata;
@@ -131,21 +130,19 @@ static void pmic8058_vib_enable(struct timed_output_dev *dev, int value)
 
 	spin_lock_irqsave(&vib->lock, flags);
 	hrtimer_cancel(&vib->vib_timer);
-	cancel_work_sync(&vib->work);
 
-	if (value == 0) {
+	if (value == 0)
 		vib->state = 0;
-		queue_work(vib->wq, &vib->work);
-	} else {
+	else {
 		value = (value > vib->pdata->max_timeout_ms ?
 				 vib->pdata->max_timeout_ms : value);
 		vib->state = 1;
-		pmic8058_vib_set(vib, vib->state);
 		hrtimer_start(&vib->vib_timer,
 			      ktime_set(value / 1000, (value % 1000) * 1000000),
 			      HRTIMER_MODE_REL);
 	}
 	spin_unlock_irqrestore(&vib->lock, flags);
+	schedule_work(&vib->work);
 }
 
 static void pmic8058_vib_update(struct work_struct *work)
@@ -173,7 +170,7 @@ static enum hrtimer_restart pmic8058_vib_timer_func(struct hrtimer *timer)
 	struct pmic8058_vib *vib = container_of(timer, struct pmic8058_vib,
 					 vib_timer);
 	vib->state = 0;
-	queue_work(vib->wq, &vib->work);
+	schedule_work(&vib->work);
 	return HRTIMER_NORESTART;
 }
 
@@ -234,12 +231,6 @@ static int __devinit pmic8058_vib_probe(struct platform_device *pdev)
 
 	spin_lock_init(&vib->lock);
 	INIT_WORK(&vib->work, pmic8058_vib_update);
-	vib->wq = create_workqueue("vibrator workqueue");
-	if (!vib->wq) {
-		pr_err("%s: Create work queue error!!!\n", __func__);
-		rc = -ENOMEM;
-		goto err_read_vib;
-	}
 
 	hrtimer_init(&vib->vib_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	vib->vib_timer.function = pmic8058_vib_timer_func;
@@ -286,7 +277,6 @@ static int __devexit pmic8058_vib_remove(struct platform_device *pdev)
 	pm_runtime_disable(&pdev->dev);
 	cancel_work_sync(&vib->work);
 	hrtimer_cancel(&vib->vib_timer);
-	destroy_workqueue(vib->wq);
 	timed_output_dev_unregister(&vib->timed_dev);
 	kfree(vib);
 

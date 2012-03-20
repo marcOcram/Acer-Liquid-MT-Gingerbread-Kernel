@@ -630,6 +630,7 @@ msmrtc_probe(struct platform_device *pdev)
 	struct rtc_time tm;
 #endif
 
+
 	if (pdev->id == (TIMEREMOTE_PROG_VER_1 & RPC_VERSION_MAJOR_MASK))
 		prog_version = TIMEREMOTE_PROG_VER_1;
 	else if (pdev->id == (TIMEREMOTE_PROG_VER_2 &

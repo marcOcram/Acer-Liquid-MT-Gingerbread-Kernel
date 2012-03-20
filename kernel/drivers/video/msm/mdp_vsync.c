@@ -167,6 +167,7 @@ static void mdp_set_vsync(unsigned long data)
 		     mfd->panel_info.lcd.vsync_enable, mfd->panel_power_on,
 		     mfd->vsync_handler_pending);
 	}
+
 #ifdef MDP_HW_VSYNC
 	mutex_lock(&vsync_timer_lock);
 	if (!timer_shutdown_flag) {

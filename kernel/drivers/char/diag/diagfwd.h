@@ -30,10 +30,6 @@
 #ifndef DIAGFWD_H
 #define DIAGFWD_H
 
-#if defined(CONFIG_QXDM_LOG)
-#include "diagchar.h"
-#endif
-
 void diagfwd_init(void);
 void diagfwd_exit(void);
 void diag_process_hdlc(void *data, unsigned len);
@@ -42,17 +38,6 @@ void __diag_smd_qdsp_send_req(void);
 void diag_usb_legacy_notifier(void *, unsigned, struct diag_request *);
 int diag_device_write(void *, int, struct diag_request *);
 int mask_request_validate(unsigned char mask_buf[]);
-
-#if defined(CONFIG_QXDM_LOG)
-#define CIR_BUF_LEN	65536
-extern int debug_mode_enable;
-extern unsigned char *circular_buf;
-extern int start_p;
-extern int end_p;
-extern int enable_qxdm_log;
-extern int connect_to_PC_QXDM;
-#endif
-
 
 /* State for diag forwarding */
 #ifdef CONFIG_DIAG_OVER_USB

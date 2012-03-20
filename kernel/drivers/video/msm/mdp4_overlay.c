@@ -111,6 +111,18 @@ struct mdp4_overlay_ctrl {
 static struct mdp4_overlay_ctrl *ctrl = &mdp4_overlay_db;
 static uint32 perf_level;
 static uint32 mdp4_del_res_rel;
+/* static array with index 0 for unset status and 1 for set status */
+static bool overlay_status[MDP4_OVERLAY_TYPE_MAX];
+
+void mdp4_overlay_status_write(enum mdp4_overlay_status type, bool val)
+{
+	overlay_status[type] = val;
+}
+
+bool mdp4_overlay_status_read(enum mdp4_overlay_status type)
+{
+	return overlay_status[type];
+}
 
 int mdp4_overlay_mixer_play(int mixer_num)
 {
@@ -507,13 +519,6 @@ void mdp4_overlay_vg_setup(struct mdp4_overlay_pipe *pipe)
 	if (pipe->op_mode & MDP4_OP_DITHER_EN) {
 		outpdw(vg_base + 0x0068,
 			pipe->r_bit << 4 | pipe->b_bit << 2 | pipe->g_bit);
-	}
-
-	if (pipe->flags & MDP_SHARPENING) {
-		outpdw(vg_base + 0x8200,
-			mdp4_ss_table_value(pipe->req_data.dpp.sharp_strength, 0));
-		outpdw(vg_base + 0x8204,
-			mdp4_ss_table_value(pipe->req_data.dpp.sharp_strength, 1));
 	}
 
 	mdp_pipe_ctrl(MDP_CMD_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
@@ -1988,18 +1993,13 @@ int mdp4_overlay_set(struct fb_info *info, struct mdp_overlay *req)
 
 	pipe->flags = req->flags;
 
-	if (pipe->flags & MDP_SHARPENING) {
-		bool test = ((pipe->req_data.dpp.sharp_strength > 0) &&
-			((req->src_rect.w > req->dst_rect.w) &&
-			 (req->src_rect.h > req->dst_rect.h)));
-		if (test) {
-			pr_warn("%s: No sharpening while downscaling.\n",
-								__func__);
-			pipe->flags &= ~MDP_SHARPENING;
-		}
-	}
-
 	mdp4_stat.overlay_set[pipe->mixer_num]++;
+
+	if (ctrl->panel_mode & MDP4_PANEL_MDDI) {
+		if (mdp_hw_revision == MDP4_REVISION_V2_1 &&
+			pipe->mixer_num == MDP4_MIXER0)
+			mdp4_overlay_status_write(MDP4_OVERLAY_TYPE_SET, true);
+	}
 
 	mdp4_del_res_rel = 0;
 	mutex_unlock(&mfd->dma->ov_mutex);
@@ -2027,6 +2027,7 @@ int mdp4_overlay_unset(struct fb_info *info, int ndx)
 {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
 	struct mdp4_overlay_pipe *pipe;
+	uint32 flags;
 
 	if (mfd == NULL)
 		return -ENODEV;
@@ -2076,14 +2077,28 @@ int mdp4_overlay_unset(struct fb_info *info, int ndx)
 		}
 #else
 		if (ctrl->panel_mode & MDP4_PANEL_MDDI) {
+			if (mdp_hw_revision == MDP4_REVISION_V2_1)
+				mdp4_overlay_status_write(
+					MDP4_OVERLAY_TYPE_UNSET, true);
 			if (mfd->panel_power_on)
 				mdp4_mddi_overlay_restore();
 		}
 #endif
-		else	/* LCDC, MIPI_VIDEO panel */
-			mdp4_overlay_reg_flush(pipe, 0);
-	} else	/* mixer1, DTV, ATV */
-		mdp4_overlay_reg_flush(pipe, 0);
+		else {	/* LCDC, MIPI_VIDEO panel */
+			flags = pipe->flags;
+			pipe->flags &= ~MDP_OV_PLAY_NOWAIT;
+			mdp4_overlay_vsync_push(mfd, pipe);
+			pipe->flags = flags;
+		}
+	}
+#ifdef CONFIG_FB_MSM_DTV
+	else {	/* mixer1, DTV, ATV */
+		flags = pipe->flags;
+		pipe->flags &= ~MDP_OV_PLAY_NOWAIT;
+		mdp4_overlay_dtv_vsync_push(mfd, pipe);
+		pipe->flags = flags;
+	}
+#endif
 
 	mdp4_stat.overlay_unset[pipe->mixer_num]++;
 
@@ -2209,15 +2224,8 @@ int mdp4_overlay_play(struct fb_info *info, struct msmfb_overlay_data *req,
 
 	if (pipe->pipe_num >= OVERLAY_PIPE_VG1)
 		mdp4_overlay_vg_setup(pipe);	/* video/graphic pipe */
-	else {
-		if (pipe->flags & MDP_SHARPENING) {
-			pr_warn(
-			"%s: Sharpening/Smoothing not supported on RGB pipe\n",
-									__func__);
-			pipe->flags &= ~MDP_SHARPENING;
-		}
+	else
 		mdp4_overlay_rgb_setup(pipe);	/* rgb pipe */
-	}
 
 	mdp4_mixer_blend_setup(pipe);
 	mdp4_mixer_stage_up(pipe);
@@ -2227,7 +2235,7 @@ int mdp4_overlay_play(struct fb_info *info, struct msmfb_overlay_data *req,
 		/* enternal interface */
 		if (ctrl->panel_mode & MDP4_PANEL_DTV)
 #ifdef CONFIG_FB_MSM_DTV
-			mdp4_overlay_dtv_vsync_push(mfd, pipe);
+			mdp4_overlay_dtv_ov_done_push(mfd, pipe);
 #else
 			mdp4_overlay_reg_flush(pipe, 1);
 #endif

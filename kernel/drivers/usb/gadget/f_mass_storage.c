@@ -2732,7 +2732,9 @@ static int fsg_main_thread(void *common_)
 /* Write permission is checked per LUN in store_*() functions. */
 static DEVICE_ATTR(ro, 0644, fsg_show_ro, fsg_store_ro);
 static DEVICE_ATTR(file, 0644, fsg_show_file, fsg_store_file);
+#ifdef CONFIG_MACH_ACER_A4
 static DEVICE_ATTR(status, 0644, fsg_show_status, fsg_store_status);
+#endif
 static DEVICE_ATTR(nofua, 0644, fsg_show_nofua, fsg_store_nofua);
 
 /****************************** FSG COMMON ******************************/
@@ -2844,10 +2846,11 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
 		rc = device_create_file(&curlun->dev, &dev_attr_file);
 		if (rc)
 			goto error_luns;
-
+#ifdef CONFIG_MACH_ACER_A4
 		rc = device_create_file(&curlun->dev, &dev_attr_status);
 		if (rc)
 			goto error_luns;
+#endif
 		rc = device_create_file(&curlun->dev, &dev_attr_nofua);
 		if (rc)
 			goto error_luns;
@@ -2998,7 +3001,9 @@ static void fsg_common_release(struct kref *ref)
 			device_remove_file(&lun->dev, &dev_attr_nofua);
 			device_remove_file(&lun->dev, &dev_attr_ro);
 			device_remove_file(&lun->dev, &dev_attr_file);
+#ifdef CONFIG_MACH_ACER_A4
 			device_remove_file(&lun->dev, &dev_attr_status);
+#endif
 			fsg_lun_close(lun);
 			device_unregister(&lun->dev);
 		}

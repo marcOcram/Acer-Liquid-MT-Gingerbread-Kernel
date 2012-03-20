@@ -63,12 +63,12 @@ uint16_t rolloff_type = 0;
 #define MT9E013_MASTER_CLK_RATE 24000000
 
 /* AF Total steps parameters */
-#define MT9E013_TOTAL_STEPS_NEAR_TO_FAR    50
+#define MT9E013_TOTAL_STEPS_NEAR_TO_FAR    32
 
 uint16_t mt9e013_step_position_table[MT9E013_TOTAL_STEPS_NEAR_TO_FAR+1];
 uint16_t mt9e013_nl_region_boundary1 = 3;
-uint16_t mt9e013_nl_region_code_per_step1 = 20;
-uint16_t mt9e013_l_region_code_per_step = 2;
+uint16_t mt9e013_nl_region_code_per_step1 = 30;
+uint16_t mt9e013_l_region_code_per_step = 4;
 uint16_t mt9e013_damping_threshold = 10;
 uint16_t mt9e013_sw_damping_time_wait = 1;
 
@@ -1254,7 +1254,6 @@ static int mt9e013_sensor_probe(const struct msm_camera_sensor_info *info,
 	s->s_init = mt9e013_sensor_open_init;
 	s->s_release = mt9e013_sensor_release;
 	s->s_config  = mt9e013_sensor_config;
-	s->s_camera_type = BACK_CAMERA_2D;
 	gpio_set_value_cansleep(info->sensor_reset, 0);
 	mt9e013_probe_init_done(info);
 	return rc;

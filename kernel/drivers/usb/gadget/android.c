@@ -516,9 +516,7 @@ void android_enable_function(struct usb_function *f, int enable)
 			}
 		}
 #endif
-#endif
 
-#if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
 		device_desc.idVendor = __constant_cpu_to_le16(get_vendor_id(dev));
 		device_desc.idProduct = __constant_cpu_to_le16(get_product_id(dev));
 		if (dev->cdev) {

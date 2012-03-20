@@ -25,16 +25,6 @@
 #define dev_to_mmc_card(d)	container_of(d, struct mmc_card, dev)
 #define to_mmc_driver(d)	container_of(d, struct mmc_driver, drv)
 
-/* resuming thread */
-#if defined(CONFIG_MMC_RESUMING_THREAD)
-extern struct workqueue_struct *msmsdcc_resume_work_queue;
-extern atomic_t msmsdcc_resuming_count;
-extern int msmsdcc_schedule_delayed_resume_work(struct delayed_work *work,
-				     unsigned long delay);
-extern void msmsdcc_wake_unlock(void);
-extern void msmsdcc_check_resuming_wake_lock(void);
-#endif
-
 static ssize_t mmc_type_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -136,47 +126,14 @@ static int mmc_bus_suspend(struct device *dev, pm_message_t state)
 	return ret;
 }
 
-/* resuming thread */
-#if defined(CONFIG_MMC_RESUMING_THREAD)
-int mmc_bus_resume2(struct device *dev)
+static int mmc_bus_resume(struct device *dev)
 {
 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
 	struct mmc_card *card = dev_to_mmc_card(dev);
 	int ret = 0;
 
-	if (dev && drv) {
-		if (dev->driver && drv->resume) {
-			ret = drv->resume(card);
-		}
-	}
-	return ret;
-}
-
-void mmcbus_resume_work(struct work_struct *work)
-{
-	struct mmc_card *card =
-		container_of(work, struct mmc_card, resume_work.work);
-	struct device *dev = &card->dev;
-
-	mmc_bus_resume2(dev);
-	msmsdcc_check_resuming_wake_lock();
-}
-#endif
-
-int mmc_bus_resume(struct device *dev)
-{
-	struct mmc_driver *drv = to_mmc_driver(dev->driver);
-	struct mmc_card *card = dev_to_mmc_card(dev);
-	int ret = 0;
-
-/* resuming thread */
-#if defined(CONFIG_MMC_RESUMING_THREAD)
-	if (dev->driver && drv->resume)
-		msmsdcc_schedule_delayed_resume_work(&card->resume_work, 0);
-#else
 	if (dev->driver && drv->resume)
 		ret = drv->resume(card);
-#endif
 	return ret;
 }
 
@@ -256,10 +213,6 @@ struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
 	card->dev.bus = &mmc_bus_type;
 	card->dev.release = mmc_release_card;
 	card->dev.type = type;
-/* resuming thread */
-#if defined(CONFIG_MMC_RESUMING_THREAD)
-	INIT_DELAYED_WORK(&card->resume_work, mmcbus_resume_work);
-#endif
 
 	return card;
 }

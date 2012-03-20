@@ -53,12 +53,6 @@
 #define DIAG_IOCTL_GET_DELAYED_RSP_ID 	8
 #define DIAG_IOCTL_LSM_DEINIT		9
 
-#define DIAG_IOCTL_EN_QXDM		0x1472
-#define DIAG_IOCTL_QXDM_MSG		0x14a1
-#define DIAG_IOCTL_QXDM_LOG		0x14a2
-#define DIAG_IOCTL_QXDM_EVT		0x14a3
-
-
 
 struct bindpkt_params {
 	uint16_t cmd_code;

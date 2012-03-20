@@ -46,7 +46,11 @@ struct msm_ptbl_entry {
 	__u32 flags;
 };
 
+#ifdef CONFIG_MACH_ACER_A4
 #define MSM_MAX_PARTITIONS 11
+#else
+#define MSM_MAX_PARTITIONS 8
+#endif
 
 static struct mtd_partition msm_nand_partitions[MSM_MAX_PARTITIONS];
 static char msm_nand_names[MSM_MAX_PARTITIONS * 16];

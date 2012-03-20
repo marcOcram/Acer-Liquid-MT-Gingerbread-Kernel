@@ -406,32 +406,10 @@ static void rndis_response_complete(struct usb_ep *ep, struct usb_request *req)
 
 static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 {
-	struct f_rndis			*rndis = NULL;
-	struct usb_composite_dev	*cdev = NULL;
+	struct f_rndis			*rndis = req->context;
+	struct usb_composite_dev	*cdev = rndis->port.func.config->cdev;
 	int				status;
 
-	if (!req) {
-		pr_info("%s: req == NULL\n", __func__);
-		return;
-	}
-	if (!req->buf) {
-		pr_info("%s: req->buf == NULL\n", __func__);
-		return;
-	}
-	rndis = req->context;
-	if (!rndis) {
-		pr_info("%s: rndis == NULL\n", __func__);
-		return;
-	}
-	if (!rndis->port.func.config) {
-		pr_info("%s: rndis->port.func.config == NULL\n", __func__);
-		return;
-	}
-	cdev = rndis->port.func.config->cdev;
-	if (!cdev) {
-		pr_info("%s: cdev == NULL\n", __func__);
-		return;
-	}
 	/* received RNDIS command from USB_CDC_SEND_ENCAPSULATED_COMMAND */
 //	spin_lock(&dev->lock);
 	status = rndis_msg_parser(rndis->config, (u8 *) req->buf);

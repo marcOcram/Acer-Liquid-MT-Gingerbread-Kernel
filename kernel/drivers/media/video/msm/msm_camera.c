@@ -2470,11 +2470,11 @@ static int __msm_release(struct msm_sync *sync)
 		if (sync->core_powered_on) {
 			if (sync->vfefn.vfe_release)
 				sync->vfefn.vfe_release(sync->pdev);
-		/*sensor release */
-		pr_info("%s, s_release\n", __func__);
-		sync->sctrl.s_release();
-		pr_info("%s, msm_camio_sensor_clk_off\n", __func__);
-		msm_camio_sensor_clk_off(sync->pdev);
+			/*sensor release */
+			pr_info("%s, s_release\n", __func__);
+			sync->sctrl.s_release();
+			pr_info("%s, msm_camio_sensor_clk_off\n", __func__);
+			msm_camio_sensor_clk_off(sync->pdev);
 			if (sync->sfctrl.strobe_flash_release) {
 				pr_info("%s, strobe_flash_release\n", __func__);
 				sync->sfctrl.strobe_flash_release(

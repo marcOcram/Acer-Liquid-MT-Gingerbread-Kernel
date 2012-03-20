@@ -170,6 +170,7 @@ struct msm_panel_info {
 	__u32 height;	/* height of picture in mm */
 #endif
 
+
 	struct mddi_panel_info mddi;
 	struct lcd_panel_info lcd;
 	struct lcdc_panel_info lcdc;
@@ -205,8 +206,10 @@ struct platform_device *msm_fb_device_alloc(struct msm_fb_panel_data *pdata,
 int panel_next_on(struct platform_device *pdev);
 int panel_next_off(struct platform_device *pdev);
 #if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
+
 int lcdc_device_register(struct msm_panel_info *pinfo, struct msm_fb_panel_data *pdata);
 #else
+
 int lcdc_device_register(struct msm_panel_info *pinfo);
 #endif
 

@@ -31,6 +31,7 @@
 #include <linux/suspend.h>
 #include <linux/tick.h>
 #include <linux/uaccess.h>
+#include <linux/wakelock.h>
 #include <mach/msm_iomap.h>
 #include <mach/system.h>
 #include <asm/cacheflush.h>
@@ -682,7 +683,12 @@ static void msm_pm_power_collapse(bool from_idle)
 
 	avsdscr_setting = avs_get_avsdscr();
 	avs_disable();
-	saved_acpuclk_rate = acpuclk_power_collapse();
+
+	if (cpu_online(dev->cpu))
+		saved_acpuclk_rate = acpuclk_power_collapse();
+	else
+		saved_acpuclk_rate = 0;
+
 	if (MSM_PM_DEBUG_CLOCK & msm_pm_debug_mask)
 		pr_info("CPU%u: %s: change clock rate (old rate = %lu)\n",
 			dev->cpu, __func__, saved_acpuclk_rate);
@@ -751,6 +757,12 @@ int msm_pm_idle_prepare(struct cpuidle_device *dev)
 				allow = false;
 				break;
 			}
+#ifdef CONFIG_HAS_WAKELOCK
+			if (has_wake_lock(WAKE_LOCK_IDLE)) {
+				allow = false;
+				break;
+			}
+#endif
 			/* fall through */
 
 		case MSM_PM_SLEEP_MODE_POWER_COLLAPSE_STANDALONE:

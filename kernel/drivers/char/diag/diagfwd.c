@@ -72,70 +72,13 @@ do {									\
 #define CHK_APQ_GET_ID() \
 (socinfo_get_id() == 86) ? 4062 : 0
 
-#if defined(CONFIG_QXDM_LOG)
-static int diag_lock = 1;
-int debug_mode_enable = 0;
-
-#define PWD_LEN		32
-static char *unlock_pwd = "acer.llxdiafkZidf#$i1234(@01xdiP";
-static char *lock_pwd =   "acer.dfzse,eizdfXD3#($%)@dxiexAA";
-
-unsigned char *circular_buf;
-int start_p = 0;
-int end_p = 0;
-int enable_qxdm_log = 0;
-int connect_to_PC_QXDM = 0;
-
-void fillbuffer(unsigned char *buf, int buffer_size)
-{
-	int available_size = 0;
-
-	if (start_p == end_p)
-		available_size = CIR_BUF_LEN - 1;
-	else
-		available_size = ((start_p - end_p) + CIR_BUF_LEN) % CIR_BUF_LEN - 1;
-
-	if (buffer_size > available_size) {
-		printk(KERN_INFO "\nqxdmlog: buf is insufficient, data is lost\n");
-	} else {
-		if ((CIR_BUF_LEN - end_p) < buffer_size) {
-			memcpy(circular_buf + end_p, buf, CIR_BUF_LEN - end_p);
-			memcpy(circular_buf, buf + (CIR_BUF_LEN - end_p), buffer_size - (CIR_BUF_LEN - end_p));
-		} else {
-			memcpy(circular_buf + end_p, buf, buffer_size);
-		}
-		end_p = (end_p + buffer_size) % CIR_BUF_LEN;
-	}
-}
-
-static void try_to_unlock(unsigned char *cmd, int length)
-{
-	if (strncmp(cmd, unlock_pwd, PWD_LEN) == 0)
-		diag_lock = 0;
-
-	printk(KERN_INFO "try_to_unlock, diag_lock: %d\n", diag_lock);
-}
-
-static void try_to_lock(unsigned char *cmd, int length)
-{
-	if (strncmp(cmd, lock_pwd, PWD_LEN) == 0)
-		diag_lock = 1;
-
-	printk(KERN_INFO "try_to_lock, diag_lock: %d\n", diag_lock);
-}
-#endif
-
 void __diag_smd_send_req(void)
 {
 	void *buf = NULL;
 	int *in_busy_ptr = NULL;
 	struct diag_request *write_ptr_modem = NULL;
 
-#if defined(CONFIG_QXDM_LOG)
-	if (driver->ch && ((!driver->in_busy_1) || enable_qxdm_log)) {
-#else
 	if (!driver->in_busy_1) {
-#endif
 		buf = driver->buf_in_1;
 		write_ptr_modem = driver->write_ptr_1;
 		in_busy_ptr = &(driver->in_busy_1);
@@ -168,13 +111,6 @@ void __diag_smd_send_req(void)
 				APPEND_DEBUG('j');
 				write_ptr_modem->length = r;
 				*in_busy_ptr = 1;
-#if defined(CONFIG_QXDM_LOG)
-				if (enable_qxdm_log)
-					fillbuffer(buf, r);
-#endif
-#if defined(CONFIG_QXDM_LOG)
-				if((debug_mode_enable || !diag_lock) && !enable_qxdm_log)
-#endif
 				diag_device_write(buf, MODEM_DATA,
 							 write_ptr_modem);
 			}
@@ -284,11 +220,7 @@ void __diag_smd_qdsp_send_req(void)
 		in_busy_qdsp_ptr = &(driver->in_busy_qdsp_2);
 	}
 
-#if defined(CONFIG_QXDM_LOG)
-	if (driver->chqdsp && buf && (enable_qxdm_log)) {
-#else
 	if (driver->chqdsp && buf) {
-#endif
 		int r = smd_read_avail(driver->chqdsp);
 
 		if (r > IN_BUF_SIZE) {
@@ -311,13 +243,6 @@ void __diag_smd_qdsp_send_req(void)
 				APPEND_DEBUG('j');
 				write_ptr_qdsp->length = r;
 				*in_busy_qdsp_ptr = 1;
-#if defined(CONFIG_QXDM_LOG)
-				if (enable_qxdm_log)
-					fillbuffer(buf, r);
-#endif
-#if defined(CONFIG_QXDM_LOG)
-				if((debug_mode_enable || !diag_lock) && !enable_qxdm_log)
-#endif
 				diag_device_write(buf, QDSP_DATA,
 							 write_ptr_qdsp);
 			}
@@ -582,63 +507,61 @@ static int diag_process_apps_pkt(unsigned char *buf, int len)
 	}
 #endif
 	/* Check for registered clients and forward packet to user-space */
-	else{
-		cmd_code = (int)(*(char *)buf);
-		temp++;
-		subsys_id = (int)(*(char *)temp);
-		temp++;
-		subsys_cmd_code = *(uint16_t *)temp;
-		temp += 2;
+	cmd_code = (int)(*(char *)buf);
+	temp++;
+	subsys_id = (int)(*(char *)temp);
+	temp++;
+	subsys_cmd_code = *(uint16_t *)temp;
+	temp += 2;
 
-		for (i = 0; i < diag_max_registration; i++) {
-			if (driver->table[i].process_id != 0) {
-				if (driver->table[i].cmd_code ==
-				     cmd_code && driver->table[i].subsys_id ==
-				     subsys_id &&
-				    driver->table[i].cmd_code_lo <=
-				     subsys_cmd_code &&
-					  driver->table[i].cmd_code_hi >=
-				     subsys_cmd_code){
+	for (i = 0; i < diag_max_registration; i++) {
+		if (driver->table[i].process_id != 0) {
+			if (driver->table[i].cmd_code ==
+				 cmd_code && driver->table[i].subsys_id ==
+				 subsys_id &&
+				driver->table[i].cmd_code_lo <=
+				 subsys_cmd_code &&
+				  driver->table[i].cmd_code_hi >=
+				 subsys_cmd_code){
+				driver->pkt_length = len;
+				diag_update_pkt_buffer(buf);
+				diag_update_sleeping_process(
+					driver->table[i].process_id);
+					return 0;
+				} /* end of if */
+			else if (driver->table[i].cmd_code == 255
+				  && cmd_code == 75) {
+				if (driver->table[i].subsys_id ==
+					subsys_id &&
+				   driver->table[i].cmd_code_lo <=
+					subsys_cmd_code &&
+					 driver->table[i].cmd_code_hi >=
+					subsys_cmd_code){
 					driver->pkt_length = len;
 					diag_update_pkt_buffer(buf);
 					diag_update_sleeping_process(
-						driver->table[i].process_id);
-						return 0;
-				    } /* end of if */
-				else if (driver->table[i].cmd_code == 255
-					  && cmd_code == 75) {
-					if (driver->table[i].subsys_id ==
-					    subsys_id &&
-					   driver->table[i].cmd_code_lo <=
-					    subsys_cmd_code &&
-					     driver->table[i].cmd_code_hi >=
-					    subsys_cmd_code){
-						driver->pkt_length = len;
-						diag_update_pkt_buffer(buf);
-						diag_update_sleeping_process(
-							driver->table[i].
-							process_id);
-						return 0;
-					}
-				} /* end of else-if */
-				else if (driver->table[i].cmd_code == 255 &&
-					  driver->table[i].subsys_id == 255) {
-					if (driver->table[i].cmd_code_lo <=
-							 cmd_code &&
-						     driver->table[i].
-						    cmd_code_hi >= cmd_code){
-						driver->pkt_length = len;
-						diag_update_pkt_buffer(buf);
-						diag_update_sleeping_process
-							(driver->table[i].
-							 process_id);
-						return 0;
-					}
-				} /* end of else-if */
-			} /* if(driver->table[i].process_id != 0) */
-		}  /* for (i = 0; i < diag_max_registration; i++) */
-	} /* else */
-		return packet_type;
+						driver->table[i].
+						process_id);
+					return 0;
+				}
+			} /* end of else-if */
+			else if (driver->table[i].cmd_code == 255 &&
+				  driver->table[i].subsys_id == 255) {
+				if (driver->table[i].cmd_code_lo <=
+						 cmd_code &&
+						 driver->table[i].
+						cmd_code_hi >= cmd_code){
+					driver->pkt_length = len;
+					diag_update_pkt_buffer(buf);
+					diag_update_sleeping_process
+						(driver->table[i].
+						 process_id);
+					return 0;
+				}
+			} /* end of else-if */
+		} /* if(driver->table[i].process_id != 0) */
+	}  /* for (i = 0; i < diag_max_registration; i++) */
+	return packet_type;
 }
 
 void diag_process_hdlc(void *data, unsigned len)
@@ -685,11 +608,7 @@ void diag_process_hdlc(void *data, unsigned len)
 							driver->hdlc_buf)+i));
 #endif /* DIAG DEBUG */
 	/* ignore 2 bytes for CRC, one for 7E and send */
-#if defined(CONFIG_QXDM_LOG)
-	if ((driver->ch) && (ret) && (type) && (hdlc.dest_idx > 3) && (debug_mode_enable || !diag_lock)) {
-#else
 	if ((driver->ch) && (ret) && (type) && (hdlc.dest_idx > 3)) {
-#endif
 		APPEND_DEBUG('g');
 		smd_write(driver->ch, driver->hdlc_buf, hdlc.dest_idx - 3);
 		APPEND_DEBUG('h');
@@ -740,10 +659,6 @@ int diagfwd_connect(void)
 
 int diagfwd_disconnect(void)
 {
-#if defined(CONFIG_QXDM_LOG)
-	diag_lock = 1;
-	printk(KERN_INFO "diagfwd_disconnect, diag_lock: %d, debug_mode_enable: %d\n", diag_lock, debug_mode_enable);
-#endif
 	printk(KERN_DEBUG "diag: USB disconnected\n");
 	driver->usb_connected = 0;
 	driver->in_busy_1 = 1;
@@ -843,15 +758,6 @@ int diagfwd_read_complete(struct diag_request *diag_read_ptr)
 
 void diag_read_work_fn(struct work_struct *work)
 {
-#if defined(CONFIG_QXDM_LOG)
-	if ((driver->read_len_legacy == PWD_LEN) && !debug_mode_enable)
-	{
-		if(diag_lock)
-			try_to_unlock((unsigned char *)(driver->usb_buf_out), driver->read_len_legacy);
-		else
-			try_to_lock((unsigned char *)(driver->usb_buf_out), driver->read_len_legacy);
-	}
-#endif
 	APPEND_DEBUG('d');
 	driver->usb_read_ptr->buf = driver->usb_buf_out;
 	driver->usb_read_ptr->length = USB_MAX_OUT_BUF;
@@ -1039,22 +945,6 @@ void diagfwd_init(void)
 			driver->apps_rsp_buf = kzalloc(150, GFP_KERNEL);
 		if (driver->apps_rsp_buf == NULL)
 			goto err;
-#if defined(CONFIG_QXDM_LOG)
-
-	printk(KERN_INFO "diag_lock = %d, debug_mode_enable = %d\n", diag_lock, debug_mode_enable);
-
-	if (circular_buf == NULL &&
-		(circular_buf = kzalloc(CIR_BUF_LEN, GFP_KERNEL)) == NULL) {
-		printk(KERN_INFO "qxdmlog:allocate circular_buf fail\n");
-		goto err;
-	} else {
-		printk(KERN_INFO "qxdmlog:allocate circular_buf OK \n");
-	}
-	start_p = 0;
-	end_p = 0;
-	enable_qxdm_log = 0;
-	connect_to_PC_QXDM = 0;
-#endif
 	driver->diag_wq = create_singlethread_workqueue("diag_wq");
 #ifdef CONFIG_DIAG_OVER_USB
 	INIT_WORK(&(driver->diag_proc_hdlc_work), diag_process_hdlc_fn);

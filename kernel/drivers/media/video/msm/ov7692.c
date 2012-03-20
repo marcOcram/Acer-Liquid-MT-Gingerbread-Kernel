@@ -464,7 +464,7 @@ static int ov7692_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
 	int rc = 0;
-	CDBG("ov7692_probe called!\n");
+	CDBG("ov7692_i2c_probe called!\n");
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		CDBG("i2c_check_functionality failed\n");
@@ -482,13 +482,11 @@ static int ov7692_i2c_probe(struct i2c_client *client,
 	ov7692_init_client(client);
 	ov7692_client = client;
 
-	msleep(50);
-
-	CDBG("ov7692_probe successed! rc = %d\n", rc);
+	CDBG("ov7692_i2c_probe success! rc = %d\n", rc);
 	return 0;
 
 probe_failure:
-	CDBG("ov7692_probe failed! rc = %d\n", rc);
+	CDBG("ov7692_i2c_probe failed! rc = %d\n", rc);
 	return rc;
 }
 

@@ -274,7 +274,9 @@ struct fsg_lun {
 	u32		sense_data;
 	u32		sense_data_info;
 	u32		unit_attention_data;
+#ifdef CONFIG_MACH_ACER_A4
 	int		enable_lun;
+#endif
 
 	struct device	dev;
 };
@@ -632,7 +634,9 @@ static int fsg_lun_open(struct fsg_lun *curlun, const char *filename)
 	curlun->filp = filp;
 	curlun->file_length = size;
 	curlun->num_sectors = num_sectors;
+#ifdef CONFIG_MACH_ACER_A4
 	curlun->enable_lun = 0;
+#endif
 	LDBG(curlun, "open backing file: %s\n", filename);
 	rc = 0;
 
@@ -732,6 +736,7 @@ static ssize_t fsg_show_file(struct device *dev, struct device_attribute *attr,
 	return rc;
 }
 
+#ifdef CONFIG_MACH_ACER_A4
 static ssize_t fsg_show_status(struct device *dev, struct device_attribute *attr,
 			   char *buf)
 {
@@ -739,7 +744,7 @@ static ssize_t fsg_show_status(struct device *dev, struct device_attribute *attr
 
 	return sprintf(buf, "%d\n", curlun->enable_lun);
 }
-
+#endif
 
 static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
 			    const char *buf, size_t count)
@@ -824,6 +829,7 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
 	return (rc < 0 ? rc : count);
 }
 
+#ifdef CONFIG_MACH_ACER_A4
 static ssize_t fsg_store_status(struct device *dev, struct device_attribute *attr,
 			      const char *buf, size_t count)
 {
@@ -834,3 +840,4 @@ static ssize_t fsg_store_status(struct device *dev, struct device_attribute *att
 
 	return count;
 }
+#endif

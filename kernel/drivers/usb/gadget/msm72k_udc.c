@@ -126,17 +126,6 @@ struct msm_endpoint {
 /* PHY status check timer to monitor phy stuck up on reset */
 static struct timer_list phy_status_timer;
 
-#ifdef CONFIG_USB_NONSTANDARD_CHARGER_SUPPORT
-/* For detect the USB charger status */
-static struct timer_list chg_type_polling_timer;
-
-/* To count the retry times for check the USB charger status */
-static int chg_det_counter = 0;
-
-/* Force the charger type as wall-charger */
-static int force_wall_charger = 0;
-#endif
-
 static void usb_do_work(struct work_struct *w);
 static void usb_do_remote_wakeup(struct work_struct *w);
 
@@ -156,11 +145,6 @@ static void usb_do_remote_wakeup(struct work_struct *w);
 #define REMOTE_WAKEUP_DELAY	msecs_to_jiffies(1000)
 #define PHY_STATUS_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
 
-#ifdef CONFIG_USB_NONSTANDARD_CHARGER_SUPPORT
-/*For detect USB chager status (every 5 seconds)*/
-#define USB_CHG_DET_INTERVAL 5000
-#define USB_CHG_DET_MAX 2
-#endif
 #if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
 /*For composite switch judgement*/
 int usb_cable_plug;
@@ -312,13 +296,6 @@ static ssize_t print_switch_state(struct switch_dev *sdev, char *buf)
 
 static inline enum chg_type usb_get_chg_type(struct usb_info *ui)
 {
-#ifdef CONFIG_USB_NONSTANDARD_CHARGER_SUPPORT
-	if (force_wall_charger) {
-		force_wall_charger = 0;
-		return USB_CHG_TYPE__WALLCHARGER;
-	}
-#endif
-
 	if ((readl(USB_PORTSC) & PORTSC_LS) == PORTSC_LS)
 		return USB_CHG_TYPE__WALLCHARGER;
 	else
@@ -484,33 +461,6 @@ static void usb_chg_detect(struct work_struct *w)
 #endif
 	}
 }
-
-#ifdef CONFIG_USB_NONSTANDARD_CHARGER_SUPPORT
-static void polling_chg_type_func(long unsigned unused)
-{
-	struct usb_info *ui = the_usb_info;
-	struct msm_otg *otg = to_msm_otg(ui->xceiv);
-
-	/* Wall charger is confirmed, Exit */
-	if (atomic_read(&otg->chg_type) == USB_CHG_TYPE__WALLCHARGER)
-		return;
-
-	/* USB is confirmed, Exit.
-	   Just check, because the timer should be already deleted.
-	   The condition doesn't happen */
-	if (atomic_read(&ui->configured))
-		return;
-
-	if (++chg_det_counter < USB_CHG_DET_MAX)
-		mod_timer(&chg_type_polling_timer,
-					jiffies + msecs_to_jiffies(USB_CHG_DET_INTERVAL));
-	else {
-		pr_info("%s: force to switch wall charger\n", __func__);
-		force_wall_charger = 1;
-		schedule_delayed_work(	&ui->chg_det, 0);
-	}
-}
-#endif
 
 static int usb_ep_get_stall(struct msm_endpoint *ept)
 {
@@ -732,28 +682,9 @@ int usb_ept_queue_xfer(struct msm_endpoint *ept, struct usb_request *_req)
 {
 	unsigned long flags;
 	struct msm_request *req = to_msm_request(_req);
-	struct msm_request *last = NULL;
-	struct usb_info *ui = NULL;
-	unsigned length = 0;
-
-	if (!req) {
-		pr_err(" %s : req == NULL\n" , __func__);
-		return -EBADRQC;
-	}
-	if (!req->req.buf) {
-		pr_err(" %s : req->req.buf == NULL\n" , __func__);
-		return -EBADRQC;
-	}
-	if (!ept) {
-		pr_err(" %s : ept == NULL\n" , __func__);
-		return -EBADRQC;
-	}
-	ui = ept->ui;
-	if (!ui) {
-		pr_err(" %s : ui == NULL\n" , __func__);
-		return -EBADRQC;
-	}
-	length = req->req.length;
+	struct msm_request *last;
+	struct usb_info *ui = ept->ui;
+	unsigned length = req->req.length;
 
 	if (length > 0x4000)
 		return -EMSGSIZE;
@@ -1615,13 +1546,8 @@ static void usb_do_work(struct work_struct *w)
 
 				ui->chg_current = 0;
 				/* wait incase chg_detect is running */
-				if (!ui->gadget.is_a_peripheral) {
-#ifdef CONFIG_USB_NONSTANDARD_CHARGER_SUPPORT
-					del_timer_sync(&chg_type_polling_timer);
-					chg_det_counter = 0;
-#endif
+				if (!ui->gadget.is_a_peripheral)
 					cancel_delayed_work_sync(&ui->chg_det);
-				}
 
 				dev_dbg(&ui->pdev->dev,
 					"msm72k_udc: ONLINE -> OFFLINE\n");
@@ -1648,6 +1574,7 @@ static void usb_do_work(struct work_struct *w)
 #endif
 				msm72k_pullup_internal(&ui->gadget, 0);
 				spin_unlock_irqrestore(&ui->lock, iflags);
+
 
 #if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
 				batt_chg_type_notify_callback((uint8_t)USB_CHG_TYPE__INVALID);
@@ -1700,10 +1627,7 @@ static void usb_do_work(struct work_struct *w)
 			}
 			if (flags & USB_FLAG_CONFIGURED) {
 				int maxpower = usb_get_max_power(ui);
-#ifdef CONFIG_USB_NONSTANDARD_CHARGER_SUPPORT
-				del_timer_sync(&chg_type_polling_timer);
-				chg_det_counter = 0;
-#endif
+
 				/* We may come here even when no configuration
 				 * is selected. Send online/offline event
 				 * accordingly.
@@ -1763,18 +1687,10 @@ static void usb_do_work(struct work_struct *w)
 					break;
 				msm72k_pullup_internal(&ui->gadget, 1);
 
-				if (!ui->gadget.is_a_peripheral) {
+				if (!ui->gadget.is_a_peripheral)
 					schedule_delayed_work(
 							&ui->chg_det,
 							USB_CHG_DET_DELAY);
-#ifdef CONFIG_USB_NONSTANDARD_CHARGER_SUPPORT
-					if (usb_get_chg_type(ui) != USB_CHG_TYPE__WALLCHARGER) {
-						setup_timer(&chg_type_polling_timer, polling_chg_type_func, 0);
-						mod_timer(&chg_type_polling_timer,
-							jiffies + msecs_to_jiffies(USB_CHG_DET_INTERVAL));
-					}
-#endif
-				}
 			}
 			break;
 		}
@@ -2581,7 +2497,6 @@ static int msm72k_probe(struct platform_device *pdev)
 
 	wake_lock_init(&ui->wlock,
 			WAKE_LOCK_SUSPEND, "usb_bus_active");
-
 #if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
 	wake_lock_init(&delay_wlock,
 			WAKE_LOCK_SUSPEND, "usb_bus_delay");

@@ -129,7 +129,9 @@ int load_565rle_image(char *filename)
 	max = fb_width(info) * fb_height(info);
 	ptr = data;
 	bits = (unsigned short *)(info->screen_base);
-#if !defined(CONFIG_MACH_ACER_A5)
+#if defined(CONFIG_MACH_ACER_A5)
+	cp_to_fb32(bits, ptr, max, count);
+#else
 	while (count > 3) {
 		unsigned n = ptr[0];
 		if (n > max)
@@ -140,8 +142,6 @@ int load_565rle_image(char *filename)
 		ptr += 2;
 		count -= 4;
 	}
-#else
-	cp_to_fb32(bits, ptr, max, count);
 #endif
 
 err_logo_free_data:

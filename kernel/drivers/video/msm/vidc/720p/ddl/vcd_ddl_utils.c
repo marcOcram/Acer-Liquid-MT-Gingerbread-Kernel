@@ -111,7 +111,6 @@ void ddl_pmem_alloc(struct ddl_buf_addr *buff_addr, size_t sz, u32 align)
 	if (IS_ERR((void *)physical_addr)) {
 		pr_err("%s(): could not allocte in kernel pmem buffers\n",
 		       __func__);
-		buff_addr->physical_base_addr = NULL;
 		return;
 	}
 

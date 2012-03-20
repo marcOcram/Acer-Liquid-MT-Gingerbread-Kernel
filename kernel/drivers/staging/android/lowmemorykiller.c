@@ -54,7 +54,6 @@ static int lowmem_minfree_size = 4;
 
 static struct task_struct *lowmem_deathpending;
 static DEFINE_SPINLOCK(lowmem_deathpending_lock);
-static unsigned long lowmem_deathpending_timeout;
 
 #define lowmem_print(level, x...)			\
 	do {						\
@@ -74,6 +73,7 @@ static void task_free_fn(struct work_struct *work)
 {
 	unsigned long flags;
 
+	task_free_unregister(&task_nb);
 	spin_lock_irqsave(&lowmem_deathpending_lock, flags);
 	lowmem_deathpending = NULL;
 	spin_unlock_irqrestore(&lowmem_deathpending_lock, flags);
@@ -103,8 +103,7 @@ static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
 	int selected_oom_adj;
 	int array_size = ARRAY_SIZE(lowmem_adj);
 	int other_free = global_page_state(NR_FREE_PAGES);
-	int other_file = global_page_state(NR_FILE_PAGES) -
-						global_page_state(NR_SHMEM);
+	int other_file = global_page_state(NR_FILE_PAGES);
 	unsigned long flags;
 
 	/*
@@ -114,8 +113,7 @@ static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
 	 * this pass.
 	 *
 	 */
-	if (lowmem_deathpending &&
-	    time_before_eq(jiffies, lowmem_deathpending_timeout))
+	if (lowmem_deathpending)
 		return 0;
 
 	if (lowmem_adj_size < array_size)
@@ -188,7 +186,7 @@ static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
 				selected->pid, selected->comm,
 				selected_oom_adj, selected_tasksize);
 			lowmem_deathpending = selected;
-			lowmem_deathpending_timeout = jiffies + HZ;
+			task_free_register(&task_nb);
 			force_sig(SIGKILL, selected);
 			rem -= selected_tasksize;
 		}
@@ -207,7 +205,6 @@ static struct shrinker lowmem_shrinker = {
 
 static int __init lowmem_init(void)
 {
-	task_free_register(&task_nb);
 	register_shrinker(&lowmem_shrinker);
 	return 0;
 }
@@ -215,7 +212,6 @@ static int __init lowmem_init(void)
 static void __exit lowmem_exit(void)
 {
 	unregister_shrinker(&lowmem_shrinker);
-	task_free_unregister(&task_nb);
 }
 
 module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
