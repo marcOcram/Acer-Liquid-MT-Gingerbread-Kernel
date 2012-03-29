@@ -2121,6 +2121,10 @@ void mddi_queue_forward_packets(uint16 first_llist_idx,
 		/* assign waiting index values */
 		pmhctl->llist_info.waiting_start_idx = first_llist_idx;
 		pmhctl->llist_info.waiting_end_idx = last_llist_idx;
+#ifdef CONFIG_MACH_ACER_A4
+		/*[Mddi_work_round] For can't resume*/
+		pmhctl->rev_state = MDDI_REV_IDLE;
+#endif
 	} else {
 		uint16 prev_end_idx = pmhctl->llist_info.waiting_end_idx;
 #ifndef FEATURE_MDDI_DISABLE_REVERSE
