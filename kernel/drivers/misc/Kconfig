@@ -324,10 +324,8 @@ config SENSORS_AK8975
 	  orientation sensor AK8975.
 
 config SENSORS_AK8975_ACER
-	tristate "AK8975 compass support - acer messed upped version"
-	default n 
+	tristate "AK8975 (Acer) compass support"
 	depends on I2C=y
-	depends on SENSORS_AK8975=n
 	help
 	  If you say yes here you get support for Asahi Kasei's
 	  orientation sensor AK8975.
