@@ -49,7 +49,12 @@
 #endif
 
 #ifdef BATT_POLLING_TIMER
-#define BAT_POLLING_TIME       30000 /* 30 seconds*/
+#define POLLING_TIME       30000 /* 30 seconds*/
+#ifdef CONFIG_ENABLE_ONE_PERCENT_BATTERY_STEPS
+#define BAT_POLLING_TIME       POLLING_TIME/5 /* 6 seconds*/
+#else
+#define BAT_POLLING_TIME       POLLING_TIME /* 30 seconds*/
+#endif
 static struct timer_list polling_timer;
 #endif
 
