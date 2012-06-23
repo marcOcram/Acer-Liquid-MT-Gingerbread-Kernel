@@ -1261,7 +1261,6 @@ static struct i2c_board_info msm_camera_boardinfo[] __initdata = {
 	},
 #endif
 #endif
-
 };
 
 #ifdef CONFIG_MSM_CAMERA
@@ -3983,7 +3982,6 @@ static struct ofn_atlab_platform_data optnav_data = {
 		.motion_filter_en       = true,
 	},
 };
-
 #if !defined(CONFIG_MACH_ACER_A4)
 static int hdmi_comm_power(int on, int show);
 static int hdmi_init_irq(void);
@@ -5259,7 +5257,6 @@ static int dtv_panel_power(int on)
 static struct lcdc_platform_data dtv_pdata = {
 	.lcdc_power_save   = dtv_panel_power,
 };
-
 #endif /* CONFIG_MACH_ACER_A4 */
 static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
        .inject_rx_on_wakeup = 1,
@@ -8144,16 +8141,16 @@ static struct mmc_platform_data msm7x30_sdc3_data = {
 #ifdef CONFIG_MMC_MSM_SDIO_SUPPORT
 	.sdiowakeup_irq = MSM_GPIO_TO_INT(118),
 #endif
-#ifdef CONFIG_MMC_MSM_SDC3_DUMMY52_REQUIRED
+#if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
+	.dummy52_required = 1,
+#elif defined(CONFIG_MMC_MSM_SDC3_DUMMY52_REQUIRED)
 	.dummy52_required = 1,
 #endif
 	.msmsdcc_fmin	= 144000,
 	.msmsdcc_fmid	= 24576000,
 	.msmsdcc_fmax	= 49152000,
 	.nonremovable	= 0,
-#if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
 	.embedded_sdio	= &atheros_ar6000_data,
-#endif
 };
 #endif
 
