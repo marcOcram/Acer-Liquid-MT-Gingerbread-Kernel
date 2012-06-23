@@ -28,6 +28,7 @@
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
 #include <linux/debugfs.h>
+
 #include <crypto/ctr.h>
 #include <crypto/des.h>
 #include <crypto/aes.h>
@@ -38,10 +39,10 @@
 #include <crypto/authenc.h>
 #include <crypto/scatterwalk.h>
 #include <crypto/internal/hash.h>
+
 #include <mach/scm.h>
 #include <mach/board.h>
-
-#include "qce.h"
+#include "inc/qce.h"
 
 
 #define MAX_CRYPTO_DEVICE 3

@@ -17,11 +17,10 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/rtc.h>
+#include <linux/syscalls.h> /* sys_sync */
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
-#ifdef CONFIG_MACH_ACER_A4
 #include <linux/delay.h>
-#endif
 
 #include "power.h"
 

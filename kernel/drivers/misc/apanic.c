@@ -195,7 +195,6 @@ static int apanic_proc_read(char *buffer, char **start, off_t offset,
 	page_offset = (file_offset + offset) % ctx->mtd->writesize;
 #endif  /* CONFIG_MACH_ACER_A4 || CONFIG_MACH_ACER_A5 */
 
-
 	if (phy_offset(ctx->mtd, (page_no * ctx->mtd->writesize))
 		== APANIC_INVALID_OFFSET) {
 		pr_err("apanic: reading an invalid address\n");

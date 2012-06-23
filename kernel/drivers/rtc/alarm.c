@@ -248,7 +248,9 @@ int alarm_set_rtc(struct timespec new_time)
 	struct timespec tmp_time;
 #if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
 	__kernel_time_t tmp;
+#endif
 
+#if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
 	getnstimeofday(&tmp_time);
 	tmp = new_time.tv_sec - tmp_time.tv_sec;
 	if (tmp < 0)

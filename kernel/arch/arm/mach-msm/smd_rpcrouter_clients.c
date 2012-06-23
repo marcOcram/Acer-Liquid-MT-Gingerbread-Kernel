@@ -47,7 +47,6 @@ static int rpc_clients_cb_thread(void *data)
 	struct msm_rpc_client_cb_item *cb_item;
 	struct msm_rpc_client *client;
 	struct rpc_request_hdr req;
-	int ret;
 
 	client = data;
 	for (;;) {
@@ -66,9 +65,7 @@ static int rpc_clients_cb_thread(void *data)
 			mutex_unlock(&client->cb_item_list_lock);
 			xdr_init_input(&client->cb_xdr, cb_item->buf,
 				       cb_item->size);
-			ret = xdr_recv_req(&client->cb_xdr, &req);
-			if (ret)
-				goto bad_rpc;
+			xdr_recv_req(&client->cb_xdr, &req);
 
 			if (req.type != 0)
 				goto bad_rpc;
@@ -110,12 +107,6 @@ static int rpc_clients_thread(void *data)
 		if (client->exit_flag) {
 			kfree(buffer);
 			break;
-		}
-
-		if (rc < 0) {
-			wake_up(&client->reply_wait);
-			kfree(buffer);
-			continue;
 		}
 
 		if (rc < ((int)(sizeof(uint32_t) * 2))) {

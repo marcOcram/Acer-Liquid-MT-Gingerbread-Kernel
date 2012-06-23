@@ -906,6 +906,7 @@ static int kgsl_yamato_start(struct kgsl_device *device, unsigned int init_ram)
 
 	kgsl_yamato_regwrite(device, REG_RBBM_DEBUG, 0x00080000);
 
+
 	KGSL_DRV_DBG("enabling RBBM interrupts  mask 0x%08lx\n",
 		     GSL_RBBM_INT_MASK);
 	kgsl_yamato_regwrite(device, REG_RBBM_INT_CNTL, GSL_RBBM_INT_MASK);

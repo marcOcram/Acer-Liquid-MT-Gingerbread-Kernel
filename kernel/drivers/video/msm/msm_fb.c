@@ -611,7 +611,7 @@ static void memset32_io(u32 __iomem *_ptr, u32 val, size_t count)
 {
 	count >>= 2;
 	while (count--)
-		*(_ptr++)=val;
+		writel(val, _ptr++);
 }
 #endif
 

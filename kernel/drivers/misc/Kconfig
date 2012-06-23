@@ -315,21 +315,6 @@ config SENSORS_TSL2550
 	  This driver can also be built as a module.  If so, the module
 	  will be called tsl2550.
 
-config SENSORS_AK8975
-	tristate "AK8975 compass support"
-	default n
-	depends on I2C
-	help
-	  If you say yes here you get support for Asahi Kasei's
-	  orientation sensor AK8975.
-
-config SENSORS_AK8975_ACER
-	tristate "AK8975 (Acer) compass support"
-	depends on I2C=y
-	help
-	  If you say yes here you get support for Asahi Kasei's
-	  orientation sensor AK8975.
-
 config SENSORS_AKM8973
 	tristate "AKM8973 Compass Driver"
 	depends on I2C
@@ -539,6 +524,13 @@ config SENSORS_ISL29018
 	help
 	  If you say yes here you get support for Intersil's
 	  P/L sensors isl29018.
+
+config SENSORS_AK8975B
+	tristate "AK8975"
+	depends on I2C=y
+	help
+	  If you say yes here you get support for Asahi Kasei's
+	  orientation sensor AK8975.
 
 config SENSORS_ADI_ADXL346
 	tristate "ADXL346 acceleration sensor support"

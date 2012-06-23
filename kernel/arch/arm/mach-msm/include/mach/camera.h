@@ -31,7 +31,7 @@
 
 #define CONFIG_MSM_CAMERA_DEBUG
 #ifdef CONFIG_MSM_CAMERA_DEBUG
-#define CDBG(fmt, args...) pr_debug(fmt, ##args)
+#define CDBG(fmt, args...) pr_debug(KERN_INFO "msm_camera: " fmt, ##args)
 #else
 #define CDBG(fmt, args...) do { } while (0)
 #endif

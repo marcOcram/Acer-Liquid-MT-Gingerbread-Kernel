@@ -66,8 +66,6 @@ module_param_named(debug_mask, msm_sdio_xprt_debug_mask,
 #define MAX_SDIO_WRITE_RETRY 5
 #define SDIO_BUF_SIZE (RPCROUTER_MSGSIZE_MAX + sizeof(struct rr_header) - 8)
 #define NUM_SDIO_BUFS 20
-#define MAX_TX_BUFS 10
-#define MAX_RX_BUFS 10
 
 struct sdio_xprt {
 	struct sdio_channel *handle;
@@ -104,9 +102,6 @@ struct sdio_buf_struct {
 static void sdio_xprt_write_data(struct work_struct *work);
 static DECLARE_WORK(work_write_data, sdio_xprt_write_data);
 static wait_queue_head_t write_avail_wait_q;
-static uint32_t num_free_bufs;
-static uint32_t num_tx_bufs;
-static uint32_t num_rx_bufs;
 
 static void free_sdio_xprt(struct sdio_xprt *chnl)
 {
@@ -125,7 +120,6 @@ static void free_sdio_xprt(struct sdio_xprt *chnl)
 		list_del(&buf->list);
 		kfree(buf);
 	}
-	num_free_bufs = 0;
 	spin_unlock_irqrestore(&chnl->free_list_lock, flags);
 
 	spin_lock_irqsave(&chnl->write_list_lock, flags);
@@ -135,7 +129,6 @@ static void free_sdio_xprt(struct sdio_xprt *chnl)
 		list_del(&buf->list);
 		kfree(buf);
 	}
-	num_tx_bufs = 0;
 	spin_unlock_irqrestore(&chnl->write_list_lock, flags);
 
 	spin_lock_irqsave(&chnl->read_list_lock, flags);
@@ -145,7 +138,6 @@ static void free_sdio_xprt(struct sdio_xprt *chnl)
 		list_del(&buf->list);
 		kfree(buf);
 	}
-	num_rx_bufs = 0;
 	spin_unlock_irqrestore(&chnl->read_list_lock, flags);
 
 	kfree(chnl);
@@ -164,7 +156,6 @@ static struct sdio_buf_struct *alloc_from_free_list(struct sdio_xprt *chnl)
 	}
 	buf = list_first_entry(&chnl->free_list, struct sdio_buf_struct, list);
 	list_del(&buf->list);
-	num_free_bufs--;
 	spin_unlock_irqrestore(&chnl->free_list_lock, flags);
 
 	buf->size = 0;
@@ -190,7 +181,6 @@ static void return_to_free_list(struct sdio_xprt *chnl,
 
 	spin_lock_irqsave(&chnl->free_list_lock, flags);
 	list_add_tail(&buf->list, &chnl->free_list);
-	num_free_bufs++;
 	spin_unlock_irqrestore(&chnl->free_list_lock, flags);
 
 }
@@ -243,7 +233,6 @@ static int rpcrouter_sdio_remote_read(void *data, uint32_t len)
 	buf->size -= len;
 	if (buf->size == 0) {
 		list_del(&buf->list);
-		num_rx_bufs--;
 		return_to_free_list(sdio_remote_xprt.channel, buf);
 	}
 	spin_unlock_irqrestore(&sdio_remote_xprt.channel->read_list_lock,
@@ -254,12 +243,15 @@ static int rpcrouter_sdio_remote_read(void *data, uint32_t len)
 static int rpcrouter_sdio_remote_write_avail(void)
 {
 	uint32_t write_avail = 0;
+	struct sdio_buf_struct *buf;
 	unsigned long flags;
 
 	SDIO_XPRT_DBG("sdio_xprt Called %s\n", __func__);
-	spin_lock_irqsave(&sdio_remote_xprt.channel->write_list_lock, flags);
-	write_avail = (MAX_TX_BUFS - num_tx_bufs) * SDIO_BUF_SIZE;
-	spin_unlock_irqrestore(&sdio_remote_xprt.channel->write_list_lock,
+	spin_lock_irqsave(&sdio_remote_xprt.channel->free_list_lock, flags);
+	list_for_each_entry(buf, &sdio_remote_xprt.channel->free_list, list) {
+		write_avail += SDIO_BUF_SIZE;
+	}
+	spin_unlock_irqrestore(&sdio_remote_xprt.channel->free_list_lock,
 				flags);
 	return write_avail;
 }
@@ -273,17 +265,6 @@ static int rpcrouter_sdio_remote_write(void *data, uint32_t len,
 
 	switch (type) {
 	case HEADER:
-		spin_lock_irqsave(&sdio_remote_xprt.channel->write_list_lock,
-				  flags);
-		if (num_tx_bufs == MAX_TX_BUFS) {
-			spin_unlock_irqrestore(
-				&sdio_remote_xprt.channel->write_list_lock,
-				flags);
-			return -ENOMEM;
-		}
-		spin_unlock_irqrestore(
-			&sdio_remote_xprt.channel->write_list_lock, flags);
-
 		SDIO_XPRT_DBG("sdio_xprt WRITE HEADER %s\n", __func__);
 		buf = alloc_from_free_list(sdio_remote_xprt.channel);
 		if (!buf) {
@@ -324,7 +305,6 @@ static int rpcrouter_sdio_remote_write(void *data, uint32_t len,
 				   flags);
 		list_add_tail(&buf->list,
 			      &sdio_remote_xprt.channel->write_list);
-		num_tx_bufs++;
 		spin_unlock_irqrestore(
 			&sdio_remote_xprt.channel->write_list_lock, flags);
 		queue_work(sdio_xprt_read_workqueue, &work_write_data);
@@ -366,7 +346,6 @@ static void sdio_xprt_write_data(struct work_struct *work)
 		return_to_free_list(sdio_remote_xprt.channel, buf);
 		spin_lock_irqsave(&sdio_remote_xprt.channel->write_list_lock,
 				   flags);
-		num_tx_bufs--;
 	}
 	spin_unlock_irqrestore(&sdio_remote_xprt.channel->write_list_lock,
 				flags);
@@ -390,19 +369,6 @@ static void sdio_xprt_read_data(struct work_struct *work)
 
 	while ((read_avail =
 		sdio_read_avail(sdio_remote_xprt.channel->handle))) {
-		spin_lock_irqsave(&sdio_remote_xprt.channel->read_list_lock,
-				  flags);
-		if (num_rx_bufs == MAX_RX_BUFS) {
-			spin_unlock_irqrestore(
-				&sdio_remote_xprt.channel->read_list_lock,
-				flags);
-			queue_delayed_work(sdio_xprt_read_workqueue,
-					   &work_read_data,
-					   msecs_to_jiffies(100));
-			break;
-		}
-		spin_unlock_irqrestore(
-			&sdio_remote_xprt.channel->read_list_lock, flags);
 
 		buf = alloc_from_free_list(sdio_remote_xprt.channel);
 		if (!buf) {
@@ -411,7 +377,7 @@ static void sdio_xprt_read_data(struct work_struct *work)
 			queue_delayed_work(sdio_xprt_read_workqueue,
 					   &work_read_data,
 					   msecs_to_jiffies(100));
-			break;
+			return;
 		}
 
 		size = sdio_read(sdio_remote_xprt.channel->handle,
@@ -424,7 +390,7 @@ static void sdio_xprt_read_data(struct work_struct *work)
 			queue_delayed_work(sdio_xprt_read_workqueue,
 					   &work_read_data,
 					   msecs_to_jiffies(100));
-			break;
+			return;
 		}
 
 		if (size == 0)
@@ -436,13 +402,11 @@ static void sdio_xprt_read_data(struct work_struct *work)
 				   flags);
 		list_add_tail(&buf->list,
 			      &sdio_remote_xprt.channel->read_list);
-		num_rx_bufs++;
 		spin_unlock_irqrestore(
 			&sdio_remote_xprt.channel->read_list_lock, flags);
 	}
 
-	if (!list_empty(&sdio_remote_xprt.channel->read_list))
-		msm_rpcrouter_xprt_notify(&sdio_remote_xprt.xprt,
+	msm_rpcrouter_xprt_notify(&sdio_remote_xprt.xprt,
 				  RPCROUTER_XPRT_EVENT_DATA);
 }
 
@@ -493,7 +457,6 @@ static int allocate_sdio_xprt(struct sdio_xprt **sdio_xprt_chnl)
 		list_add_tail(&buf->list, &chnl->free_list);
 		spin_unlock_irqrestore(&chnl->free_list_lock, flags);
 	}
-	num_free_bufs = NUM_SDIO_BUFS;
 
 	*sdio_xprt_chnl = chnl;
 	return 0;

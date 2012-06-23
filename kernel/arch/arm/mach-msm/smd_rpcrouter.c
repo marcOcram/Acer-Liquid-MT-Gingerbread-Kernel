@@ -40,7 +40,6 @@
 #include <linux/platform_device.h>
 #include <linux/uaccess.h>
 #include <linux/debugfs.h>
-#include <linux/ratelimit.h>
 
 #include <asm/byteorder.h>
 
@@ -69,55 +68,55 @@ static int smd_rpcrouter_debug_mask;
 module_param_named(debug_mask, smd_rpcrouter_debug_mask,
 		   int, S_IRUGO | S_IWUSR | S_IWGRP);
 
-#define DIAG(x...) pr_err("[RR] ERROR " x)
+#define DIAG(x...) printk(KERN_ERR "[RR] ERROR " x)
 
 #if defined(CONFIG_MSM_ONCRPCROUTER_DEBUG)
 #define D(x...) do { \
 if (smd_rpcrouter_debug_mask & RTR_DBG) \
-	pr_info_ratelimited(x); \
+	printk(KERN_ERR x); \
 } while (0)
 
 #define RR(x...) do { \
 if (smd_rpcrouter_debug_mask & R2R_MSG) \
-	pr_info_ratelimited("[RR] "x); \
+	printk(KERN_ERR "[RR] "x); \
 } while (0)
 
 #define RAW(x...) do { \
 if (smd_rpcrouter_debug_mask & R2R_RAW) \
-	pr_info_ratelimited("[RAW] "x); \
+	printk(KERN_ERR "[RAW] "x); \
 } while (0)
 
 #define RAW_HDR(x...) do { \
 if (smd_rpcrouter_debug_mask & R2R_RAW_HDR) \
-	pr_info_ratelimited("[HDR] "x); \
+	printk(KERN_ERR "[HDR] "x); \
 } while (0)
 
 #define RAW_PMR(x...) do { \
 if (smd_rpcrouter_debug_mask & RAW_PMR) \
-	pr_info_ratelimited("[PMR] "x); \
+	printk(KERN_ERR "[PMR] "x); \
 } while (0)
 
 #define RAW_PMR_NOMASK(x...) do { \
-	pr_info_ratelimited("[PMR] "x); \
+	printk(KERN_ERR "[PMR] "x); \
 } while (0)
 
 #define RAW_PMW(x...) do { \
 if (smd_rpcrouter_debug_mask & RAW_PMW) \
-	pr_info_ratelimited("[PMW] "x); \
+	printk(KERN_ERR "[PMW] "x); \
 } while (0)
 
 #define RAW_PMW_NOMASK(x...) do { \
-	pr_info_ratelimited("[PMW] "x); \
+	printk(KERN_ERR "[PMW] "x); \
 } while (0)
 
 #define IO(x...) do { \
 if (smd_rpcrouter_debug_mask & RPC_MSG) \
-	pr_info_ratelimited("[RPC] "x); \
+	printk(KERN_ERR "[RPC] "x); \
 } while (0)
 
 #define NTFY(x...) do { \
 if (smd_rpcrouter_debug_mask & NTFY_MSG) \
-	pr_info_ratelimited("[NOTIFY] "x); \
+	printk(KERN_ERR "[NOTIFY] "x); \
 } while (0)
 #else
 #define D(x...) do { } while (0)
@@ -223,10 +222,14 @@ static struct rpcrouter_xprt_info *rpcrouter_get_xprt_info(uint32_t remote_pid)
 {
 	struct rpcrouter_xprt_info *xprt_info;
 
+	mutex_lock(&xprt_info_list_lock);
 	list_for_each_entry(xprt_info, &xprt_info_list, list) {
-		if (xprt_info->remote_pid == remote_pid)
+		if (xprt_info->remote_pid == remote_pid) {
+			mutex_unlock(&xprt_info_list_lock);
 			return xprt_info;
 		}
+	}
+	mutex_unlock(&xprt_info_list_lock);
 	return NULL;
 }
 
@@ -546,9 +549,6 @@ int msm_rpcrouter_destroy_local_endpoint(struct msm_rpc_endpoint *ept)
 	/* Endpoint with dst_pid = 0xffffffff corresponds to that of
 	** router port. So don't send a REMOVE CLIENT message while
 	** destroying it.*/
-	spin_lock_irqsave(&local_endpoints_lock, flags);
-	list_del(&ept->list);
-	spin_unlock_irqrestore(&local_endpoints_lock, flags);
 	if (ept->dst_pid != 0xffffffff) {
 		msg.cmd = RPCROUTER_CTRL_CMD_REMOVE_CLIENT;
 		msg.cli.pid = ept->pid;
@@ -580,6 +580,9 @@ int msm_rpcrouter_destroy_local_endpoint(struct msm_rpc_endpoint *ept)
 
 	wake_lock_destroy(&ept->read_q_wake_lock);
 	wake_lock_destroy(&ept->reply_q_wake_lock);
+	spin_lock_irqsave(&local_endpoints_lock, flags);
+	list_del(&ept->list);
+	spin_unlock_irqrestore(&local_endpoints_lock, flags);
 	kfree(ept);
 	return 0;
 }
@@ -609,11 +612,16 @@ static int rpcrouter_create_remote_endpoint(uint32_t pid, uint32_t cid)
 static struct msm_rpc_endpoint *rpcrouter_lookup_local_endpoint(uint32_t cid)
 {
 	struct msm_rpc_endpoint *ept;
+	unsigned long flags;
 
+	spin_lock_irqsave(&local_endpoints_lock, flags);
 	list_for_each_entry(ept, &local_endpoints, list) {
-		if (ept->cid == cid)
+		if (ept->cid == cid) {
+			spin_unlock_irqrestore(&local_endpoints_lock, flags);
 			return ept;
+		}
 	}
+	spin_unlock_irqrestore(&local_endpoints_lock, flags);
 	return NULL;
 }
 
@@ -1029,10 +1037,8 @@ static void do_read_data(struct work_struct *work)
 	}
 #endif
 
-	spin_lock_irqsave(&local_endpoints_lock, flags);
 	ept = rpcrouter_lookup_local_endpoint(hdr.dst_cid);
 	if (!ept) {
-		spin_unlock_irqrestore(&local_endpoints_lock, flags);
 		DIAG("no local ept for cid %08x\n", hdr.dst_cid);
 		kfree(frag);
 		goto done;
@@ -1042,7 +1048,7 @@ static void do_read_data(struct work_struct *work)
 	 * and if so, append this fragment to that packet.
 	 */
 	mid = PACMARK_MID(pm);
-	spin_lock(&ept->incomplete_lock);
+	spin_lock_irqsave(&ept->incomplete_lock, flags);
 	list_for_each_entry(pkt, &ept->incomplete, list) {
 		if (pkt->mid == mid) {
 			pkt->last->next = frag;
@@ -1050,16 +1056,15 @@ static void do_read_data(struct work_struct *work)
 			pkt->length += frag->length;
 			if (PACMARK_LAST(pm)) {
 				list_del(&pkt->list);
-				spin_unlock(&ept->incomplete_lock);
+				spin_unlock_irqrestore(&ept->incomplete_lock,
+						       flags);
 				goto packet_complete;
 			}
-			spin_unlock(&ept->incomplete_lock);
-			spin_unlock_irqrestore(&local_endpoints_lock, flags);
+			spin_unlock_irqrestore(&ept->incomplete_lock, flags);
 			goto done;
 		}
 	}
-	spin_unlock(&ept->incomplete_lock);
-	spin_unlock_irqrestore(&local_endpoints_lock, flags);
+	spin_unlock_irqrestore(&ept->incomplete_lock, flags);
 	/* This mid is new -- create a packet for it, and put it on
 	 * the incomplete list if this fragment is not a last fragment,
 	 * otherwise put it on the read queue.
@@ -1070,32 +1075,18 @@ static void do_read_data(struct work_struct *work)
 	memcpy(&pkt->hdr, &hdr, sizeof(hdr));
 	pkt->mid = mid;
 	pkt->length = frag->length;
-
-	spin_lock_irqsave(&local_endpoints_lock, flags);
-	ept = rpcrouter_lookup_local_endpoint(hdr.dst_cid);
-	if (!ept) {
-		spin_unlock_irqrestore(&local_endpoints_lock, flags);
-		DIAG("no local ept for cid %08x\n", hdr.dst_cid);
-		kfree(frag);
-		kfree(pkt);
-		goto done;
-	}
 	if (!PACMARK_LAST(pm)) {
-		spin_lock(&ept->incomplete_lock);
 		list_add_tail(&pkt->list, &ept->incomplete);
-		spin_unlock(&ept->incomplete_lock);
-		spin_unlock_irqrestore(&local_endpoints_lock, flags);
 		goto done;
 	}
 
 packet_complete:
-	spin_lock(&ept->read_q_lock);
+	spin_lock_irqsave(&ept->read_q_lock, flags);
 	D("%s: take read lock on ept %p\n", __func__, ept);
 	wake_lock(&ept->read_q_wake_lock);
 	list_add_tail(&pkt->list, &ept->read_q);
 	wake_up(&ept->wait_q);
-	spin_unlock(&ept->read_q_lock);
-	spin_unlock_irqrestore(&local_endpoints_lock, flags);
+	spin_unlock_irqrestore(&ept->read_q_lock, flags);
 done:
 
 	if (hdr.confirm_rx) {
@@ -1271,14 +1262,15 @@ static int msm_rpc_write_pkt(
 	if (r_ept)
 		spin_unlock_irqrestore(&r_ept->quota_lock, flags);
 
-	mutex_lock(&xprt_info_list_lock);
 	xprt_info = rpcrouter_get_xprt_info(hdr->dst_pid);
-	if (!xprt_info) {
-		mutex_unlock(&xprt_info_list_lock);
-		return -ENETRESET;
+
+#if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
+	if(xprt_info == NULL) {
+	    printk(KERN_ERR "msm_rpc_write_pkt(): xprt_info NULL\n");
+	    return -ENETRESET;
 	}
+#endif
 	spin_lock_irqsave(&xprt_info->lock, flags);
-	mutex_unlock(&xprt_info_list_lock);
 	spin_lock(&ept->restart_lock);
 	if (ept->restart_state != RESTART_NORMAL) {
 		ept->restart_state &= ~RESTART_PEND_NTFY;
@@ -1293,14 +1285,7 @@ static int msm_rpc_write_pkt(
 		spin_unlock(&ept->restart_lock);
 		spin_unlock_irqrestore(&xprt_info->lock, flags);
 		msleep(250);
-		mutex_lock(&xprt_info_list_lock);
-		xprt_info = rpcrouter_get_xprt_info(hdr->dst_pid);
-		if (!xprt_info) {
-			mutex_unlock(&xprt_info_list_lock);
-			return -ENETRESET;
-		}
 		spin_lock_irqsave(&xprt_info->lock, flags);
-		mutex_unlock(&xprt_info_list_lock);
 		spin_lock(&ept->restart_lock);
 	}
 	if (ept->restart_state != RESTART_NORMAL) {
@@ -2315,7 +2300,7 @@ static int __init rpcrouter_init(void)
 	int ret;
 
 	msm_rpc_connect_timeout_ms = 0;
-	smd_rpcrouter_debug_mask |= (SMEM_LOG | R2R_MSG | RPC_MSG);
+	smd_rpcrouter_debug_mask |= SMEM_LOG;
 	debugfs_init();
 
 	/* Initialize what we need to start processing */

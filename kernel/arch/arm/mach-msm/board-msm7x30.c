@@ -149,11 +149,7 @@
 #else
 #define MSM_FB_SIZE		0x500000
 #endif
-#ifdef CONFIG_MACH_ACER_A4
 #define MSM_PMEM_ADSP_SIZE      0x2400000
-#else
-#define MSM_PMEM_ADSP_SIZE      0x1800000
-#endif
 #define MSM_FLUID_PMEM_ADSP_SIZE	0x2800000
 #define PMEM_KERNEL_EBI1_SIZE   0x600000
 #define MSM_PMEM_AUDIO_SIZE     0x200000
@@ -525,7 +521,6 @@ static int pm8058_gpios_init(void)
 			PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_SDC4_EN_N), 0);
 	}
 #endif
-
 #if defined(CONFIG_MACH_ACER_A5) || defined(CONFIG_MACH_ACER_A4)
 	pm8058_gpio_config(PMIC_GPIO_SDC4_EN, &sdc4_en);
 	gpio_set_value_cansleep(PM8058_GPIO_PM_TO_SYS(PMIC_GPIO_SDC4_EN), 0);
@@ -1502,11 +1497,7 @@ struct msm_camera_device_platform_data msm_camera_device_data = {
 	.ioext.csisz  = 0x00000400,
 	.ioext.csiirq = INT_CSI,
 	.ioclk.mclk_clk_rate = 24000000,
-#ifdef CONFIG_MACH_ACER_A4
 	.ioclk.vfe_clk_rate  = 192000000,
-#else
-	.ioclk.vfe_clk_rate  = 122880000,
-#endif
 };
 
 #if defined(CONFIG_MACH_ACER_A5)
@@ -2024,7 +2015,6 @@ void msm_snddev_hsed_voltage_off(void)
 
 	vreg_put(snddev_vreg_gp4);
 #endif
-
 }
 
 #if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
@@ -3984,14 +3974,13 @@ static struct ofn_atlab_platform_data optnav_data = {
 };
 #if !defined(CONFIG_MACH_ACER_A4)
 static int hdmi_comm_power(int on, int show);
-static int hdmi_init_irq(void);
 static int hdmi_enable_5v(int on);
+static int hdmi_init_irq(void);
 #if !defined(CONFIG_MACH_ACER_A5)
 static int hdmi_core_power(int on, int show);
 static bool hdmi_check_hdcp_hw_support(void);
 #endif
 static int hdmi_cec_power(int on);
-static bool hdmi_check_hdcp_hw_support(void);
 #if defined(CONFIG_MACH_ACER_A5)
 static int a5_hdmi_intr_detect(void);
 #endif
@@ -4311,7 +4300,7 @@ static struct i2c_board_info msm_i2c_board_info[] = {
 		I2C_BOARD_INFO("smb380", 0x38),
 	},
 #endif
-#ifdef CONFIG_SENSORS_AK8975_ACER
+#ifdef CONFIG_SENSORS_AK8975B
 	{
 		I2C_BOARD_INFO("akm8975", 0x0F),
 	},
@@ -7082,14 +7071,12 @@ static struct platform_device *devices[] __initdata = {
 	&android_pmem_device,
 	&msm_fb_device,
 	&msm_migrate_pages_device,
-#if !defined(CONFIG_MACH_ACER_A5) && !defined(CONFIG_MACH_ACER_A4)
-	&mddi_toshiba_device,
-	&lcdc_toshiba_panel_device,
-#endif
 #ifdef CONFIG_MSM_ROTATOR
 	&msm_rotator_device,
 #endif
 #if !defined(CONFIG_MACH_ACER_A5) && !defined(CONFIG_MACH_ACER_A4)
+	&mddi_toshiba_device,
+	&lcdc_toshiba_panel_device,
 	&lcdc_sharp_panel_device,
 #endif
 	&android_pmem_kernel_ebi1_device,
@@ -7281,7 +7268,7 @@ static void __init msm_device_i2c_2_init(void)
 }
 
 static struct msm_i2c_platform_data qup_i2c_pdata = {
-	.clk_freq = 384000,
+	.clk_freq = 100000,
 	.pclk = "camif_pad_pclk",
 	.msm_i2c_config_gpio = qup_i2c_gpio_config,
 };
@@ -8129,7 +8116,7 @@ static struct mmc_platform_data msm7x30_sdc2_data = {
 	.msmsdcc_fmin	= 144000,
 	.msmsdcc_fmid	= 24576000,
 	.msmsdcc_fmax	= 49152000,
-	.nonremovable	= 1,
+	.nonremovable	= 0,
 };
 #endif
 
@@ -8267,16 +8254,6 @@ static void __init msm7x30_init_mmc(void)
 #ifdef CONFIG_MMC_MSM_SDC2_SUPPORT
 	if (machine_is_msm8x55_svlte_surf())
 		msm7x30_sdc2_data.msmsdcc_fmax =  24576000;
-	if (machine_is_msm8x55_svlte_surf() ||
-			machine_is_msm8x55_svlte_ffa()) {
-		msm7x30_sdc2_data.sdio_lpm_gpio_setup = msm_sdcc_sdio_lpm_gpio;
-#ifdef CONFIG_MMC_MSM_SDIO_SUPPORT
-		msm7x30_sdc2_data.sdiowakeup_irq = MSM_GPIO_TO_INT(68);
-#ifdef CONFIG_MSM_SDIO_AL
-		msm7x30_sdc2_data.is_sdio_al_client = 1;
-#endif
-#endif
-	}
 	sdcc_vreg_data[1].vreg_data = vreg_s3;
 	sdcc_vreg_data[1].level = 1800;
 	msm_add_sdcc(2, &msm7x30_sdc2_data);

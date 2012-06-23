@@ -216,13 +216,214 @@ static int diagchar_close(struct inode *inode, struct file *file)
 	}
 	return -ENOMEM;
 }
+#if defined(CONFIG_QXDM_LOG)
 
+#include <mach/msm_rpcrouter.h>
+
+#define DIAG_PROG                0x30001000
+#define DIAG_VERS                0x10001
+#define ONCRPC_DIAG_MSG_TRC_PROC 1
+#define ONCRPC_DIAG_LOG_TRC_PROC 2
+#define ONCRPC_DIAG_EVT_TRC_PROC 3
+#define ONCRPC_DIAG_ALL_TRC_PROC 4
+
+#define ACER_EVENT_LAST_ID       0x083f
+#define ACER_EVENT_MASK_SIZE     (ACER_EVENT_LAST_ID/8+1)
+#define ID_SET_NUM               30
+
+struct set_sdlog_on_off_req {
+	struct rpc_request_hdr hdr;
+	uint32_t data;
+};
+
+typedef struct {
+	unsigned short ssid;
+	unsigned long int level;
+}msg_mask_set_type;
+
+typedef struct {
+	unsigned short code;
+	unsigned char flag;
+}log_mask_set_type;
+
+typedef struct {
+	int msg_cnt;
+	msg_mask_set_type msg_set[ID_SET_NUM];
+}trc_mask_msg;
+
+typedef struct {
+	int log_cnt;
+	log_mask_set_type log_set[ID_SET_NUM];
+}trc_mask_log;
+
+typedef struct {
+	unsigned int v_event_mask;
+	unsigned char event_mask_set[ACER_EVENT_MASK_SIZE];
+}trc_mask_evt;
+
+struct set_qxdm_msg_req {
+	struct rpc_request_hdr hdr;
+	trc_mask_msg msg_mask;
+};
+
+struct set_qxdm_log_req {
+	struct rpc_request_hdr hdr;
+	trc_mask_log log_mask;
+};
+
+struct set_qxdm_evt_req {
+	struct rpc_request_hdr hdr;
+	trc_mask_evt evt_mask;
+};
+
+void set_qxdm_all(int on)
+{
+	int rpc_call_rtn = 0;
+	static struct msm_rpc_endpoint *endpoint;
+	struct set_sdlog_on_off_req req;
+
+	printk(KERN_INFO "diagchar: set_qxdm_all, on = %d\n", on);
+	if (!endpoint) {
+		endpoint = msm_rpc_connect(DIAG_PROG, DIAG_VERS , 0);
+		if (IS_ERR(endpoint)) {
+			printk(KERN_INFO "diagchar: rpc connect failed\n\n");
+			endpoint = NULL;
+			return;
+		} else {
+			printk(KERN_INFO "diagchar: rpc connect successful\n");
+		}
+	}
+	req.data = on;
+	printk(KERN_INFO "diagchar: req.data = %d\n", req.data);
+	rpc_call_rtn = msm_rpc_call(endpoint, ONCRPC_DIAG_ALL_TRC_PROC, &req, sizeof(req), 5 * HZ);
+	printk(KERN_INFO "diagchar: rpc_call_rtn = %d\n", rpc_call_rtn);
+}
+
+void set_qxdm_msg(struct set_qxdm_msg_req req)
+{
+	int rpc_call_rtn = 0;
+	static struct msm_rpc_endpoint *endpoint;
+
+	if (!endpoint) {
+		endpoint = msm_rpc_connect(DIAG_PROG, DIAG_VERS , 0);
+		if (IS_ERR(endpoint)) {
+			printk(KERN_INFO "diagchar: rpc connect failed\n\n");
+			endpoint = NULL;
+			return;
+		} else {
+			printk(KERN_INFO "diagchar: rpc connect successful\n");
+		}
+	}
+	rpc_call_rtn = msm_rpc_call(endpoint, ONCRPC_DIAG_MSG_TRC_PROC, &req, sizeof(struct set_qxdm_msg_req), 5 * HZ);
+	printk(KERN_INFO "diagchar: rpc_call_rtn = %d\n", rpc_call_rtn);
+}
+
+void set_qxdm_log(struct set_qxdm_log_req req)
+{
+	int rpc_call_rtn = 0;
+	static struct msm_rpc_endpoint *endpoint;
+
+	if (!endpoint) {
+		endpoint = msm_rpc_connect(DIAG_PROG, DIAG_VERS , 0);
+		if (IS_ERR(endpoint)) {
+			printk(KERN_INFO "diagchar: rpc connect failed\n\n");
+			endpoint = NULL;
+			return;
+		} else {
+			printk(KERN_INFO "diagchar: rpc connect successful\n");
+		}
+	}
+	rpc_call_rtn = msm_rpc_call(endpoint, ONCRPC_DIAG_LOG_TRC_PROC, &req, sizeof(struct set_qxdm_log_req), 5 * HZ);
+	printk(KERN_INFO "diagchar: rpc_call_rtn = %d\n", rpc_call_rtn);
+}
+
+void set_qxdm_evt(struct set_qxdm_evt_req req)
+{
+	int rpc_call_rtn = 0;
+	static struct msm_rpc_endpoint *endpoint;
+
+	if (!endpoint) {
+		endpoint = msm_rpc_connect(DIAG_PROG, DIAG_VERS , 0);
+		if (IS_ERR(endpoint)) {
+			printk(KERN_INFO "diagchar: rpc connect failed\n\n");
+			endpoint = NULL;
+			return;
+		} else {
+			printk(KERN_INFO "diagchar: rpc connect successful\n");
+		}
+	}
+	rpc_call_rtn = msm_rpc_call(endpoint, ONCRPC_DIAG_EVT_TRC_PROC, &req, sizeof(struct set_qxdm_evt_req), 5 * HZ);
+	printk(KERN_INFO "diagchar: rpc_call_rtn = %d\n", rpc_call_rtn);
+}
+#endif
 static int diagchar_ioctl(struct inode *inode, struct file *filp,
 			   unsigned int iocmd, unsigned long ioarg)
 {
 	int i, j, count_entries = 0, temp;
 	int success = -1;
-
+#if defined(CONFIG_QXDM_LOG)
+	int err;
+	if (iocmd == DIAG_IOCTL_EN_QXDM) {
+		if(connect_to_PC_QXDM) {
+			printk(KERN_INFO "diagchar : PC QXDM connected\n");
+			return -1;
+		}
+		if(((int)ioarg) == 0) {
+			enable_qxdm_log = 0;
+			diagfwd_disconnect();
+		} else {
+			enable_qxdm_log = 1;
+		}
+		printk(KERN_INFO "diagchar: DIAG_IOCTL_EN_QXDM called, num = %d, enable_qxdm_log = %d\n", (int)ioarg, enable_qxdm_log);
+		set_qxdm_all((int)ioarg);
+		return 0;
+	} else if (iocmd == DIAG_IOCTL_QXDM_MSG) {
+		struct set_qxdm_msg_req req;
+		printk(KERN_INFO "diagchar: DIAG_IOCTL_QXDM_MSG called\n");
+		if(connect_to_PC_QXDM) {
+			printk(KERN_INFO "diagchar : PC QXDM connected\n");
+			return -1;
+		}
+		err = copy_from_user(&req, (void *)ioarg, sizeof(struct set_qxdm_msg_req));
+		if (err) {
+			printk(KERN_INFO "diagchar : copy_from_user failed\n");
+		} else {
+			enable_qxdm_log = 1;
+			set_qxdm_msg(req);
+		}
+		return 0;
+	} else if (iocmd == DIAG_IOCTL_QXDM_LOG) {
+		struct set_qxdm_log_req req;
+		printk(KERN_INFO "diagchar: DIAG_IOCTL_QXDM_LOG called\n");
+		if(connect_to_PC_QXDM) {
+			printk(KERN_INFO "diagchar : PC QXDM connected\n");
+			return -1;
+		}
+		err = copy_from_user(&req, (void *)ioarg, sizeof(struct set_qxdm_log_req));
+		if (err) {
+			printk(KERN_INFO "diagchar : copy_from_user failed\n");
+		} else {
+			enable_qxdm_log = 1;
+			set_qxdm_log(req);
+		}
+		return 0;
+	} else if (iocmd == DIAG_IOCTL_QXDM_EVT) {
+		struct set_qxdm_evt_req req;
+		printk(KERN_INFO "diagchar: DIAG_IOCTL_QXDM_EVT called\n");
+		if(connect_to_PC_QXDM) {
+			printk(KERN_INFO "diagchar : PC QXDM connected\n");
+			return -1;
+		}
+		err = copy_from_user(&req, (void *)ioarg, sizeof(struct set_qxdm_evt_req));
+		if (err) {
+			printk(KERN_INFO "diagchar : copy_from_user failed\n");
+		} else {
+			enable_qxdm_log = 1;
+			set_qxdm_evt(req);
+		}
+		return 0;
+	}
+#endif
 	if (iocmd == DIAG_IOCTL_COMMAND_REG) {
 		struct bindpkt_params_per_process *pkt_params =
 			 (struct bindpkt_params_per_process *) ioarg;

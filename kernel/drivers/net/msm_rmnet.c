@@ -237,9 +237,6 @@ static __be16 rmnet_ip_type_trans(struct sk_buff *skb, struct net_device *dev)
 	return protocol;
 }
 
-static void smd_net_data_handler(unsigned long arg);
-static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
-
 /* Called in soft-irq context */
 static void smd_net_data_handler(unsigned long arg)
 {
@@ -266,10 +263,6 @@ static void smd_net_data_handler(unsigned long arg)
 			skb = dev_alloc_skb(sz + NET_IP_ALIGN);
 			if (skb == NULL) {
 				pr_err("rmnet_recv() cannot allocate skb\n");
-				/* out of memory, reschedule a later attempt */
-				smd_net_data_tasklet.data = (unsigned long)dev;
-				tasklet_schedule(&smd_net_data_tasklet);
-				break;
 			} else {
 				skb->dev = dev;
 				skb_reserve(skb, NET_IP_ALIGN);
@@ -312,6 +305,8 @@ static void smd_net_data_handler(unsigned long arg)
 			pr_err("rmnet_recv() smd lied about avail?!");
 	}
 }
+
+static DECLARE_TASKLET(smd_net_data_tasklet, smd_net_data_handler, 0);
 
 static int _rmnet_xmit(struct sk_buff *skb, struct net_device *dev)
 {

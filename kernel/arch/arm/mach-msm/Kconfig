@@ -819,7 +819,7 @@ config MSM_N_WAY_SMSM
 config MSM_RESET_MODEM
 	tristate "Reset Modem Driver"
 	depends on MSM_SMD
-	default m
+	default n
 	help
 	  Allows the user to reset the modem through a device node.
 
@@ -1326,17 +1326,6 @@ config MSM_RPM_LOG
 	  This option enables a driver which can read from a circular buffer
 	  of messages produced by the RPM. These messages provide diagnostic
 	  information about RPM operation. The driver outputs the messages
-	  via a debugfs node.
-
-config MSM_RPM_STATS_LOG
-	tristate "MSM Resource Power Manager Stat Driver
-	depends on DEBUG_FS
-	depends on ARCH_MSM8X60
-	default n
-	  help
-	  This option enables a driver which reads RPM messages from a shared
-	  memory location. These messages provide statistical information about
-	  the low power modes that RPM enters. The drivers outputs the message
 	  via a debugfs node.
 
 config SMMU

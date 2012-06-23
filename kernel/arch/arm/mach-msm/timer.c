@@ -989,7 +989,6 @@ unsigned long long notrace sched_clock(void)
 	return cyc_to_sched_clock(&cd, cyc, (u32)~0);
 }
 
-#ifdef CONFIG_MACH_ACER_A4
 static void notrace msm_update_sched_clock(void)
 {
 	struct msm_clock *clock = &msm_clocks[MSM_GLOBAL_TIMER];
@@ -997,7 +996,6 @@ static void notrace msm_update_sched_clock(void)
 	u32 cyc = cs->read(cs);
 	update_sched_clock(&cd, cyc, (u32)~0);
 }
-#endif
 
 #ifdef CONFIG_ARCH_MSM_SCORPIONMP
 int read_current_timer(unsigned long *timer_val)
@@ -1007,14 +1005,13 @@ int read_current_timer(unsigned long *timer_val)
 	return 0;
 }
 #endif
-#ifdef CONFIG_MACH_ACER_A4
+
 static void __init msm_sched_clock_init(void)
 {
 	struct msm_clock *clock = &msm_clocks[MSM_GLOBAL_TIMER];
 
 	init_sched_clock(&cd, msm_update_sched_clock, 32, clock->freq);
 }
-#endif
 static void __init msm_timer_init(void)
 {
 	int i;
@@ -1072,9 +1069,7 @@ static void __init msm_timer_init(void)
 
 		clockevents_register_device(ce);
 	}
-#ifdef CONFIG_MACH_ACER_A4
 	msm_sched_clock_init();
-#endif
 #ifdef CONFIG_ARCH_MSM_SCORPIONMP
 	writel(1, msm_clocks[MSM_CLOCK_DGT].regbase + TIMER_ENABLE);
 	dsb();

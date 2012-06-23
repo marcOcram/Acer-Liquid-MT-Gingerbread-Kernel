@@ -50,7 +50,6 @@
 #endif
 #include <linux/gpio.h>
 #include <mach/mdm.h>
-#include "rpm_stats.h"
 
 /* Address of GSBI blocks */
 #define MSM_GSBI1_PHYS	0x16000000
@@ -476,8 +475,8 @@ static struct resource kgsl_resources[] = {
 #ifdef CONFIG_MSM_BUS_SCALING
 static struct msm_bus_vectors grp3d_init_vectors[] = {
 	{
-		.src = MSM_BUS_MASTER_GRAPHICS_3D,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
+		.src = MSM_BUS_MMSS_MASTER_GRAPHICS_3D,
+		.dst = MSM_BUS_APPSS_SLAVE_EBI_CH0,
 		.ab = 0,
 		.ib = 0,
 	},
@@ -485,10 +484,10 @@ static struct msm_bus_vectors grp3d_init_vectors[] = {
 
 static struct msm_bus_vectors grp3d_max_vectors[] = {
 	{
-		.src = MSM_BUS_MASTER_GRAPHICS_3D,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 2008000000U,
-		.ib = 2008000000U,
+		.src = MSM_BUS_MMSS_MASTER_GRAPHICS_3D,
+		.dst = MSM_BUS_APPSS_SLAVE_EBI_CH0,
+		.ab = 2096000000U,
+		.ib = 2096000000U,
 	},
 };
 
@@ -511,8 +510,8 @@ static struct msm_bus_scale_pdata grp3d_bus_scale_pdata = {
 
 static struct msm_bus_vectors grp2d0_init_vectors[] = {
 	{
-		.src = MSM_BUS_MASTER_GRAPHICS_2D_CORE0,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
+		.src = MSM_BUS_MMSS_MASTER_GRAPHICS_2D_CORE0,
+		.dst = MSM_BUS_APPSS_SLAVE_EBI_CH0,
 		.ab = 0,
 		.ib = 0,
 	},
@@ -520,10 +519,10 @@ static struct msm_bus_vectors grp2d0_init_vectors[] = {
 
 static struct msm_bus_vectors grp2d0_max_vectors[] = {
 	{
-		.src = MSM_BUS_MASTER_GRAPHICS_2D_CORE0,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 0,
-		.ib = 2096000000U,
+		.src = MSM_BUS_MMSS_MASTER_GRAPHICS_2D_CORE0,
+		.dst = MSM_BUS_APPSS_SLAVE_EBI_CH0,
+		.ab = 248000000,
+		.ib = 248000000,
 	},
 };
 
@@ -546,8 +545,8 @@ struct msm_bus_scale_pdata grp2d0_bus_scale_pdata = {
 
 static struct msm_bus_vectors grp2d1_init_vectors[] = {
 	{
-		.src = MSM_BUS_MASTER_GRAPHICS_2D_CORE1,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
+		.src = MSM_BUS_MMSS_MASTER_GRAPHICS_2D_CORE1,
+		.dst = MSM_BUS_APPSS_SLAVE_EBI_CH0,
 		.ab = 0,
 		.ib = 0,
 	},
@@ -555,10 +554,10 @@ static struct msm_bus_vectors grp2d1_init_vectors[] = {
 
 static struct msm_bus_vectors grp2d1_max_vectors[] = {
 	{
-		.src = MSM_BUS_MASTER_GRAPHICS_2D_CORE1,
-		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 0,
-		.ib = 2096000000U,
+		.src = MSM_BUS_MMSS_MASTER_GRAPHICS_2D_CORE1,
+		.dst = MSM_BUS_APPSS_SLAVE_EBI_CH0,
+		.ab = 248000000,
+		.ib = 248000000,
 	},
 };
 
@@ -611,7 +610,7 @@ struct kgsl_platform_data kgsl_pdata = {
 	.max_grp3d_freq = 266667000,
 	.min_grp3d_freq = 266667000,
 	.set_grp3d_async = NULL,
-	.imem_clk_name = "imem_axi_clk",
+	.imem_clk_name = NULL,
 	.imem_pclk_name = "imem_pclk",
 	.grp3d_clk_name = "gfx3d_clk",
 	.grp3d_pclk_name = "gfx3d_pclk",
@@ -1455,21 +1454,6 @@ struct platform_device msm_device_vidc = {
 	.resource = msm_device_vidc_resources,
 };
 
-#if defined(CONFIG_MSM_RPM_STATS_LOG)
-static struct msm_rpmstats_platform_data msm_rpm_stat_pdata = {
-	.phys_addr_base = 0x00107E04,
-	.phys_size = SZ_8K,
-};
-
-struct platform_device msm_rpm_stat_device = {
-	.name = "msm_rpm_stat",
-	.id = -1,
-	.dev = {
-		.platform_data = &msm_rpm_stat_pdata,
-	},
-};
-#endif
-
 #ifdef CONFIG_MSM_BUS_SCALING
 struct platform_device msm_bus_sys_fabric = {
 	.name  = "msm_bus_fabric",
@@ -1542,6 +1526,7 @@ struct clk_lookup msm_clocks_8x60[] = {
 	CLK_RPM("smi_clk",		SMI_CLK,		NULL, CLK_MIN),
 	CLK_RPM("smi_a_clk",		SMI_A_CLK,		NULL, CLK_MIN),
 
+	CLK_8X60("ce_clk",		CE2_CLK,		NULL, OFF),
 	CLK_8X60("gsbi_uart_clk",	GSBI1_UART_CLK,		NULL, OFF),
 	CLK_8X60("gsbi_uart_clk",	GSBI2_UART_CLK,		NULL, OFF),
 	CLK_8X60("gsbi_uart_clk",	GSBI3_UART_CLK, "msm_serial_hsl.2",
@@ -1581,13 +1566,12 @@ struct clk_lookup msm_clocks_8x60[] = {
 	CLK_8X60("tssc_clk",		TSSC_CLK,		NULL, OFF),
 	CLK_8X60("usb_hs_clk",		USB_HS1_XCVR_CLK,	NULL, OFF),
 	CLK_8X60("usb_phy_clk",		USB_PHY0_CLK,		NULL, OFF),
+	CLK_8X60("usb_fs_src_clk",	USB_FS1_SRC_CLK,	NULL, OFF),
 	CLK_8X60("usb_fs_clk",		USB_FS1_XCVR_CLK,	NULL, OFF),
 	CLK_8X60("usb_fs_sys_clk",	USB_FS1_SYS_CLK,	NULL, OFF),
-	CLK_8X60("usb_fs_src_clk",	USB_FS1_SRC_CLK,	NULL, OFF),
+	CLK_8X60("usb_fs_src_clk",	USB_FS2_SRC_CLK,	NULL, OFF),
 	CLK_8X60("usb_fs_clk",		USB_FS2_XCVR_CLK,	NULL, OFF),
 	CLK_8X60("usb_fs_sys_clk",	USB_FS2_SYS_CLK,	NULL, OFF),
-	CLK_8X60("usb_fs_src_clk",	USB_FS2_SRC_CLK,	NULL, OFF),
-	CLK_8X60("ce_clk",		CE2_P_CLK,		NULL, OFF),
 	CLK_8X60("gsbi_pclk",		GSBI1_P_CLK, "spi_qsd.0", OFF),
 	CLK_8X60("gsbi_pclk",		GSBI2_P_CLK,		NULL, OFF),
 	CLK_8X60("gsbi_pclk",		GSBI3_P_CLK, "msm_serial_hsl.2", 0),
@@ -1626,39 +1610,39 @@ struct clk_lookup msm_clocks_8x60[] = {
 	CLK_8X60("rpm_msg_ram_pclk",	RPM_MSG_RAM_P_CLK,	NULL, OFF),
 	CLK_8X60("amp_clk",		AMP_CLK,		NULL, OFF),
 	CLK_8X60("cam_clk",		CAM_CLK,		NULL, OFF),
+	CLK_8X60("csi_src_clk",		CSI_SRC_CLK,		NULL, OFF),
 	CLK_8X60("csi_clk",		CSI0_CLK,		NULL, OFF),
 	CLK_8X60("csi_clk",		CSI1_CLK,	  "msm_camera_ov7692.0",
 			OFF),
-	CLK_8X60("csi_src_clk",		CSI_SRC_CLK,		NULL, OFF),
 	CLK_8X60("dsi_byte_div_clk",	DSI_BYTE_CLK,		NULL, OFF),
 	CLK_8X60("dsi_esc_clk",		DSI_ESC_CLK,		NULL, OFF),
 	CLK_8X60("gfx2d0_clk",		GFX2D0_CLK,		NULL, OFF),
 	CLK_8X60("gfx2d1_clk",		GFX2D1_CLK,		NULL, OFF),
 	CLK_8X60("gfx3d_clk",		GFX3D_CLK,		NULL, OFF),
 	CLK_8X60("ijpeg_clk",		IJPEG_CLK,		NULL, OFF),
+	CLK_8X60("imem_clk",		IMEM_CLK,		NULL, OFF),
 	CLK_8X60("jpegd_clk",		JPEGD_CLK,		NULL, OFF),
 	CLK_8X60("mdp_clk",		MDP_CLK,		NULL, OFF),
 	CLK_8X60("mdp_vsync_clk",	MDP_VSYNC_CLK,		NULL, OFF),
-	CLK_8X60("pixel_lcdc_clk",	PIXEL_LCDC_CLK,		NULL, OFF),
 	CLK_8X60("pixel_mdp_clk",	PIXEL_MDP_CLK,		NULL, OFF),
+	CLK_8X60("pixel_lcdc_clk",	PIXEL_LCDC_CLK,		NULL, OFF),
 	CLK_8X60("rot_clk",		ROT_CLK,		NULL, OFF),
+	CLK_8X60("tv_src_clk",		TV_SRC_CLK,		NULL, OFF),
 	CLK_8X60("tv_enc_clk",		TV_ENC_CLK,		NULL, OFF),
 	CLK_8X60("tv_dac_clk",		TV_DAC_CLK,		NULL, OFF),
 	CLK_8X60("vcodec_clk",		VCODEC_CLK,		NULL, OFF),
 	CLK_8X60("mdp_tv_clk",		MDP_TV_CLK,		NULL, OFF),
 	CLK_8X60("hdmi_clk",		HDMI_TV_CLK,		NULL, OFF),
-	CLK_8X60("tv_src_clk",		TV_SRC_CLK,		NULL, OFF),
 	CLK_8X60("hdmi_app_clk",	HDMI_APP_CLK,		NULL, OFF),
 	CLK_8X60("vpe_clk",		VPE_CLK,		NULL, OFF),
+	CLK_8X60("vfe_clk",		VFE_CLK,		NULL, OFF),
 	CLK_8X60("csi_vfe_clk",		CSI0_VFE_CLK,		NULL, OFF),
 	CLK_8X60("csi_vfe_clk",		CSI1_VFE_CLK,	  "msm_camera_ov7692.0",
 			OFF),
-	CLK_8X60("vfe_clk",		VFE_CLK,		NULL, OFF),
 	CLK_8X60("smmu_jpegd_clk",	JPEGD_AXI_CLK,		NULL, OFF),
 	CLK_8X60("smmu_vfe_clk",	VFE_AXI_CLK,		NULL, OFF),
 	CLK_8X60("vfe_axi_clk",		VFE_AXI_CLK,		NULL, OFF),
 	CLK_8X60("ijpeg_axi_clk",	IJPEG_AXI_CLK,		NULL, OFF),
-	CLK_8X60("imem_axi_clk",	IMEM_AXI_CLK,		NULL, OFF),
 	CLK_8X60("mdp_axi_clk",		MDP_AXI_CLK,		NULL, OFF),
 	CLK_8X60("rot_axi_clk",		ROT_AXI_CLK,		NULL, OFF),
 	CLK_8X60("vcodec_axi_clk",	VCODEC_AXI_CLK,		NULL, OFF),

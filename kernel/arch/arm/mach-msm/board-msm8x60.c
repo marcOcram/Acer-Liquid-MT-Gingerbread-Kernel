@@ -25,7 +25,6 @@
 
 #include <linux/input/pmic8058-keypad.h>
 #include <linux/pmic8058-pwrkey.h>
-#include <linux/rtc/rtc-pm8058.h>
 #include <linux/pmic8058-vibrator.h>
 #include <linux/leds.h>
 #include <linux/pmic8058-othc.h>
@@ -101,7 +100,8 @@
 #include "saw-regulator.h"
 #include "gpiomux.h"
 #include "gpiomux-8x60.h"
-#include "rpm_stats.h"
+#include "mpm.h"
+
 #define MSM_SHARED_RAM_PHYS 0x40000000
 
 /* Macros assume PMIC GPIOs start at 0 */
@@ -313,10 +313,10 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 #ifdef CONFIG_MSM_AVS_HW
 		.reg_init_values[MSM_SPM_REG_SAW_AVS_CTL] = 0x586020FF,
 #endif
-		.reg_init_values[MSM_SPM_REG_SAW_CFG] = 0x1C,
+		.reg_init_values[MSM_SPM_REG_SAW_CFG] = 0x1F,
 		.reg_init_values[MSM_SPM_REG_SAW_SPM_CTL] = 0x68,
-		.reg_init_values[MSM_SPM_REG_SAW_SPM_SLP_TMR_DLY] = 0x0C0CFFFF,
-		.reg_init_values[MSM_SPM_REG_SAW_SPM_WAKE_TMR_DLY] = 0x78780FFF,
+		.reg_init_values[MSM_SPM_REG_SAW_SPM_SLP_TMR_DLY] = 0xFFFFFFFF,
+		.reg_init_values[MSM_SPM_REG_SAW_SPM_WAKE_TMR_DLY] = 0xFFFFFFFF,
 
 		.reg_init_values[MSM_SPM_REG_SAW_SLP_CLK_EN] = 0x01,
 		.reg_init_values[MSM_SPM_REG_SAW_SLP_HSFS_PRECLMP_EN] = 0x07,
@@ -327,10 +327,10 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 		.reg_init_values[MSM_SPM_REG_SAW_SPM_MPM_CFG] = 0x00,
 
 		.awake_vlevel = 0xA0,
-		.retention_vlevel = 0x89,
+		.retention_vlevel = 0x8D,
 		.collapse_vlevel = 0x20,
-		.retention_mid_vlevel = 0x89,
-		.collapse_mid_vlevel = 0x89,
+		.retention_mid_vlevel = 0xA0,
+		.collapse_mid_vlevel = 0x98,
 
 		.vctl_timeout_us = 50,
 	},
@@ -341,10 +341,10 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 #ifdef CONFIG_MSM_AVS_HW
 		.reg_init_values[MSM_SPM_REG_SAW_AVS_CTL] = 0x586020FF,
 #endif
-		.reg_init_values[MSM_SPM_REG_SAW_CFG] = 0x1C,
+		.reg_init_values[MSM_SPM_REG_SAW_CFG] = 0x1F,
 		.reg_init_values[MSM_SPM_REG_SAW_SPM_CTL] = 0x68,
-		.reg_init_values[MSM_SPM_REG_SAW_SPM_SLP_TMR_DLY] = 0x0C0CFFFF,
-		.reg_init_values[MSM_SPM_REG_SAW_SPM_WAKE_TMR_DLY] = 0x78780FFF,
+		.reg_init_values[MSM_SPM_REG_SAW_SPM_SLP_TMR_DLY] = 0xFFFFFFFF,
+		.reg_init_values[MSM_SPM_REG_SAW_SPM_WAKE_TMR_DLY] = 0xFFFFFFFF,
 
 		.reg_init_values[MSM_SPM_REG_SAW_SLP_CLK_EN] = 0x13,
 		.reg_init_values[MSM_SPM_REG_SAW_SLP_HSFS_PRECLMP_EN] = 0x07,
@@ -355,10 +355,10 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 		.reg_init_values[MSM_SPM_REG_SAW_SPM_MPM_CFG] = 0x00,
 
 		.awake_vlevel = 0xA0,
-		.retention_vlevel = 0x89,
+		.retention_vlevel = 0x8D,
 		.collapse_vlevel = 0x20,
-		.retention_mid_vlevel = 0x89,
-		.collapse_mid_vlevel = 0x89,
+		.retention_mid_vlevel = 0xA0,
+		.collapse_mid_vlevel = 0x98,
 
 		.vctl_timeout_us = 50,
 	},
@@ -376,7 +376,7 @@ static struct regulator_init_data saw_s0_init_data = {
 		.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.min_uV = 840000,
-			.max_uV = 1250000,
+			.max_uV = 1200000,
 		},
 		.num_consumer_supplies = 1,
 		.consumer_supplies = &saw_s0_supply,
@@ -386,7 +386,7 @@ static struct regulator_init_data saw_s1_init_data = {
 		.constraints = {
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
 			.min_uV = 840000,
-			.max_uV = 1250000,
+			.max_uV = 1200000,
 		},
 		.num_consumer_supplies = 1,
 		.consumer_supplies = &saw_s1_supply,
@@ -1814,12 +1814,12 @@ static struct msm_camera_sensor_flash_data flash_ov7692 = {
 };
 static struct msm_camera_sensor_info msm_camera_sensor_ov7692_data = {
 	.sensor_name	= "ov7692",
-	.sensor_reset	= GPIO_WEB_CAMIF_RESET_N,
-	.sensor_pwd	= 85,
-	.vcm_pwd	= 1,
-	.vcm_enable	= 0,
-	.pdata		= &msm_camera_device_data_web_cam,
-	.resource	= msm_camera_resources,
+	.sensor_reset	= 106,
+	.sensor_pwd		= 85,
+	.vcm_pwd		= 1,
+	.vcm_enable		= 0,
+	.pdata			= &msm_camera_device_data_web_cam,
+	.resource		= msm_camera_resources,
 	.num_resources	= ARRAY_SIZE(msm_camera_resources),
 	.flash_data		= &flash_ov7692,
 	.csi_if			= 1
@@ -2444,10 +2444,10 @@ static ssize_t tma300_vkeys_show(struct kobject *kobj,
 			struct kobj_attribute *attr, char *buf)
 {
 	return sprintf(buf,
-	__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":60:875:90:120"
-	":" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":180:875:90:120"
-	":" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":300:875:90:120"
-	":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":420:875:90:120"
+	__stringify(EV_KEY) ":" __stringify(KEY_BACK) ":60:875:90:90"
+	":" __stringify(EV_KEY) ":" __stringify(KEY_MENU) ":180:875:90:90"
+	":" __stringify(EV_KEY) ":" __stringify(KEY_HOME) ":300:875:90:90"
+	":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":420:875:90:90"
 	"\n");
 }
 
@@ -3022,8 +3022,7 @@ static struct rpm_vreg_pdata rpm_vreg_init_pdata[RPM_VREG_ID_MAX] = {
 	RPM_VREG_INIT_LDO(PM8058_L5,  0, 1, 0, 2850000, 2850000, LDO300HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L6,  0, 1, 0, 3000000, 3600000,  LDO50HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L7,  0, 1, 0, 1800000, 1800000,  LDO50HMIN, 0),
-	RPM_VREG_INIT_LDO_PF(PM8058_L8,  0, 1, 0, 2900000, 3050000, LDO300HMIN,
-		RPM_VREG_PIN_CTRL_NONE, RPM_VREG_PIN_FN_SLEEP_B),
+	RPM_VREG_INIT_LDO(PM8058_L8,  0, 1, 0, 2900000, 3050000, LDO300HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L9,  0, 1, 0, 1800000, 1800000, LDO300HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L10, 0, 1, 0, 2600000, 2600000, LDO300HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L11, 0, 1, 0, 1500000, 1500000, LDO150HMIN, 0),
@@ -3035,8 +3034,7 @@ static struct rpm_vreg_pdata rpm_vreg_init_pdata[RPM_VREG_ID_MAX] = {
 	RPM_VREG_INIT_LDO(PM8058_L17, 0, 1, 0, 2600000, 2600000, LDO150HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L18, 0, 1, 1, 2200000, 2200000, LDO150HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L19, 0, 1, 0, 2500000, 2500000, LDO150HMIN, 0),
-	RPM_VREG_INIT_LDO_PF(PM8058_L20, 0, 1, 0, 1800000, 1800000, LDO150HMIN,
-		RPM_VREG_PIN_CTRL_NONE, RPM_VREG_PIN_FN_SLEEP_B),
+	RPM_VREG_INIT_LDO(PM8058_L20, 0, 1, 0, 1800000, 1800000, LDO150HMIN, 0),
 	RPM_VREG_INIT_LDO_PF(PM8058_L21, 1, 1, 0, 1200000, 1200000, LDO150HMIN,
 		RPM_VREG_PIN_CTRL_NONE, RPM_VREG_PIN_FN_SLEEP_B),
 	RPM_VREG_INIT_LDO(PM8058_L22, 0, 1, 0, 1200000, 1200000, LDO300HMIN, 0),
@@ -3044,16 +3042,16 @@ static struct rpm_vreg_pdata rpm_vreg_init_pdata[RPM_VREG_ID_MAX] = {
 	RPM_VREG_INIT_LDO(PM8058_L24, 0, 1, 0, 1200000, 1200000, LDO150HMIN, 0),
 	RPM_VREG_INIT_LDO(PM8058_L25, 0, 1, 0, 1200000, 1200000, LDO150HMIN, 0),
 
-	RPM_VREG_INIT_SMPS(PM8058_S0, 0, 1, 1,  500000, 1250000,  SMPS_HMIN, 0,
-		RPM_VREG_FREQ_1p60),
-	RPM_VREG_INIT_SMPS(PM8058_S1, 0, 1, 1,  500000, 1250000,  SMPS_HMIN, 0,
-		RPM_VREG_FREQ_1p60),
-	RPM_VREG_INIT_SMPS(PM8058_S2, 0, 1, 1, 1200000, 1400000,  SMPS_HMIN,
-		RPM_VREG_PIN_CTRL_A0, RPM_VREG_FREQ_1p60),
+	RPM_VREG_INIT_SMPS(PM8058_S0, 0, 1, 1,  500000, 1200000,  SMPS_HMIN, 0,
+		RPM_VREG_FREQ_1p75),
+	RPM_VREG_INIT_SMPS(PM8058_S1, 0, 1, 1,  500000, 1200000,  SMPS_HMIN, 0,
+		RPM_VREG_FREQ_1p75),
+	RPM_VREG_INIT_SMPS(PM8058_S2, 0, 1, 0, 1200000, 1400000,  SMPS_HMIN,
+		RPM_VREG_PIN_CTRL_A0, RPM_VREG_FREQ_1p75),
 	RPM_VREG_INIT_SMPS(PM8058_S3, 1, 1, 0, 1800000, 1800000,  SMPS_HMIN, 0,
-		RPM_VREG_FREQ_1p60),
+		RPM_VREG_FREQ_1p75),
 	RPM_VREG_INIT_SMPS(PM8058_S4, 1, 1, 0, 2200000, 2200000,  SMPS_HMIN, 0,
-		RPM_VREG_FREQ_1p60),
+		RPM_VREG_FREQ_1p75),
 
 	RPM_VREG_INIT_VS(PM8058_LVS0, 0, 1, 0,				 0),
 	RPM_VREG_INIT_VS(PM8058_LVS1, 0, 1, 0,				 0),
@@ -3070,11 +3068,11 @@ static struct rpm_vreg_pdata rpm_vreg_init_pdata[RPM_VREG_ID_MAX] = {
 	RPM_VREG_INIT_LDO(PM8901_L6,  0, 1, 0, 2200000, 2200000, LDO300HMIN, 0),
 
 	RPM_VREG_INIT_SMPS(PM8901_S2, 0, 1, 0, 1300000, 1300000,   FTS_HMIN, 0,
-		RPM_VREG_FREQ_1p60),
+		RPM_VREG_FREQ_1p75),
 	RPM_VREG_INIT_SMPS(PM8901_S3, 0, 1, 0, 1100000, 1100000,   FTS_HMIN, 0,
-		RPM_VREG_FREQ_1p60),
+		RPM_VREG_FREQ_1p75),
 	RPM_VREG_INIT_SMPS(PM8901_S4, 0, 1, 0, 1225000, 1225000,   FTS_HMIN,
-		RPM_VREG_PIN_CTRL_A0, RPM_VREG_FREQ_1p60),
+		RPM_VREG_PIN_CTRL_A0, RPM_VREG_FREQ_1p75),
 
 	RPM_VREG_INIT_VS(PM8901_LVS0, 1, 1, 0,				 0),
 	RPM_VREG_INIT_VS(PM8901_LVS1, 0, 1, 0,				 0),
@@ -3558,9 +3556,6 @@ static struct platform_device *surf_devices[] __initdata = {
 
 #if defined(CONFIG_MSM_RPM_LOG) || defined(CONFIG_MSM_RPM_LOG_MODULE)
 	&msm_rpm_log_device,
-#endif
-#if defined(CONFIG_MSM_RPM_STATS_LOG)
-	&msm_rpm_stat_device,
 #endif
 	&msm_device_vidc,
 #if (defined(CONFIG_MARIMBA_CORE)) && \
@@ -4339,16 +4334,9 @@ static struct hsed_bias_config hsed_bias_config = {
 
 static struct othc_hsed_config hsed_config_1 = {
 	.hsed_bias_config = &hsed_bias_config,
-	/*
-	 * The detection delay and switch reporting delay are
-	 * required to encounter a hardware bug (spurious switch
-	 * interrupts on slow insertion/removal of the headset).
-	 * This will introduce a delay in reporting the accessory
-	 * insertion and removal to the userspace.
-	 */
-	.detection_delay_ms = 1500,
+	.detection_delay_ms = 200,
 	/* Switch info */
-	.switch_debounce_ms = 1500,
+	.switch_debounce_ms = 1000,
 	.othc_support_n_switch = false,
 	.switch_config = &switch_config,
 	/* Accessory info */
@@ -4357,18 +4345,11 @@ static struct othc_hsed_config hsed_config_1 = {
 	.othc_num_accessories = ARRAY_SIZE(othc_accessories),
 };
 
-static struct othc_regulator_config othc_reg = {
-	.regulator	 = "8058_l5",
-	.max_uV		 = 2850000,
-	.min_uV		 = 2850000,
-};
-
 /* MIC_BIAS0 is configured as normal MIC BIAS */
 static struct pmic8058_othc_config_pdata othc_config_pdata_0 = {
 	.micbias_select = OTHC_MICBIAS_0,
 	.micbias_capability = OTHC_MICBIAS,
 	.micbias_enable = OTHC_SIGNAL_OFF,
-	.micbias_regulator = &othc_reg,
 };
 
 /* MIC_BIAS1 is configured as HSED_BIAS for OTHC */
@@ -4376,7 +4357,6 @@ static struct pmic8058_othc_config_pdata othc_config_pdata_1 = {
 	.micbias_select = OTHC_MICBIAS_1,
 	.micbias_capability = OTHC_MICBIAS_HSED,
 	.micbias_enable = OTHC_SIGNAL_PWM_TCXO,
-	.micbias_regulator = &othc_reg,
 	.hsed_config = &hsed_config_1,
 	.hsed_name = "8660_handset",
 };
@@ -4386,7 +4366,6 @@ static struct pmic8058_othc_config_pdata othc_config_pdata_2 = {
 	.micbias_select = OTHC_MICBIAS_2,
 	.micbias_capability = OTHC_MICBIAS,
 	.micbias_enable = OTHC_SIGNAL_OFF,
-	.micbias_regulator = &othc_reg,
 };
 
 static struct resource resources_othc_0[] = {
@@ -4675,10 +4654,6 @@ static struct resource resources_rtc[] = {
        },
 };
 
-static struct pm8058_rtc_platform_data pm8058_rtc_pdata = {
-	.rtc_alarm_powerup	= false,
-};
-
 static struct pmic8058_led pmic8058_flash_leds[] = {
 	[0] = {
 		.name		= "camera:flash0",
@@ -4825,8 +4800,6 @@ static struct mfd_cell pm8058_subdevs[] = {
 		.id = -1,
 		.num_resources  = ARRAY_SIZE(resources_rtc),
 		.resources      = resources_rtc,
-		.platform_data = &pm8058_rtc_pdata,
-		.data_size = sizeof(pm8058_rtc_pdata),
 	},
 	{
 		.name = "pm8058-tm",
@@ -4838,6 +4811,12 @@ static struct mfd_cell pm8058_subdevs[] = {
 		.id		= -1,
 	},
 	{
+		.name = "pm8058-charger",
+		.id = -1,
+		.num_resources = ARRAY_SIZE(resources_pm8058_charger),
+		.resources = resources_pm8058_charger,
+	},
+	{
 		.name = "pm8058-misc",
 		.id = -1,
 		.num_resources  = ARRAY_SIZE(resources_pm8058_misc),
@@ -4845,25 +4824,18 @@ static struct mfd_cell pm8058_subdevs[] = {
 	},
 };
 
-static struct mfd_cell pm8058_charger_sub_dev = {
-		.name = "pm8058-charger",
-		.id = -1,
-		.num_resources = ARRAY_SIZE(resources_pm8058_charger),
-		.resources = resources_pm8058_charger,
-};
-
 static struct pm8058_platform_data pm8058_platform_data = {
 	.irq_base = PM8058_IRQ_BASE,
 
 	.num_subdevs = ARRAY_SIZE(pm8058_subdevs),
 	.sub_devices = pm8058_subdevs,
-	.irq_trigger_flags = IRQF_TRIGGER_LOW,
+	.irq_trigger_flags = IRQF_TRIGGER_HIGH,
 };
 
 static struct i2c_board_info pm8058_boardinfo[] __initdata = {
 	{
 		I2C_BOARD_INFO("pm8058-core", 0x55),
-		.irq = MSM_GPIO_TO_INT(PM8058_GPIO_INT),
+		.irq = TLMM_SCSS_DIR_CONN_IRQ_1,
 		.platform_data = &pm8058_platform_data,
 	},
 };
@@ -5295,13 +5267,13 @@ static struct pm8901_platform_data pm8901_platform_data = {
 	.irq_base = PM8901_IRQ_BASE,
 	.num_subdevs = ARRAY_SIZE(pm8901_subdevs),
 	.sub_devices = pm8901_subdevs,
-	.irq_trigger_flags = IRQF_TRIGGER_LOW,
+	.irq_trigger_flags = IRQF_TRIGGER_HIGH,
 };
 
 static struct i2c_board_info pm8901_boardinfo[] __initdata = {
 	{
 		I2C_BOARD_INFO("pm8901-core", 0x55),
-		.irq = MSM_GPIO_TO_INT(PM8901_GPIO_INT),
+		.irq = TLMM_SCSS_DIR_CONN_IRQ_2,
 		.platform_data = &pm8901_platform_data,
 	},
 };
@@ -5312,50 +5284,9 @@ static struct i2c_board_info pm8901_boardinfo[] __initdata = {
 	|| defined(CONFIG_GPIO_SX150X_MODULE))
 
 static struct regulator *vreg_bahama;
-
-struct bahama_config_register{
-	u8 reg;
-	u8 value;
-	u8 mask;
-};
-
-enum version{
-	VER_1_0,
-	VER_2_0,
-	VER_UNSUPPORTED = 0xFF
-};
-
-static u8 read_bahama_ver(void)
-{
-	int rc;
-	struct marimba config = { .mod_id = SLAVE_ID_BAHAMA };
-	u8 bahama_version;
-
-	rc = marimba_read_bit_mask(&config, 0x00,  &bahama_version, 1, 0x1F);
-	if (rc < 0) {
-		printk(KERN_ERR
-			 "%s: version read failed: %d\n",
-			__func__, rc);
-			return rc;
-	} else {
-		printk(KERN_INFO
-		"%s: version read got: 0x%x\n",
-		__func__, bahama_version);
-	}
-
-	switch (bahama_version) {
-	case 0x08: /* varient of bahama v1 */
-	case 0x10:
-	case 0x00:
-		return VER_1_0;
-	case 0x09: /* variant of bahama v2 */
-		return VER_2_0;
-	default:
-		return VER_UNSUPPORTED;
-	}
-}
-
 static unsigned int msm_bahama_setup_power(void)
+
+
 {
 	int rc = 0;
 	const char *msm_bahama_regulator = "8058_s3";
@@ -5423,48 +5354,6 @@ static unsigned int msm_bahama_shutdown_power(int value)
 
 	return 0;
 };
-
-static unsigned int msm_bahama_core_config(int type)
-{
-	int rc = 0;
-
-	if (type == BAHAMA_ID) {
-
-		int i;
-		struct marimba config = { .mod_id = SLAVE_ID_BAHAMA };
-
-		const struct bahama_config_register v20_init[] = {
-			/* reg, value, mask */
-			{ 0xF4, 0x84, 0xFF }, /* AREG */
-			{ 0xF0, 0x04, 0xFF } /* DREG */
-		};
-
-		if (read_bahama_ver() == VER_2_0) {
-			for (i = 0; i < ARRAY_SIZE(v20_init); i++) {
-				u8 value = v20_init[i].value;
-				rc = marimba_write_bit_mask(&config,
-					v20_init[i].reg,
-					&value,
-					sizeof(v20_init[i].value),
-					v20_init[i].mask);
-				if (rc < 0) {
-					printk(KERN_ERR
-						"%s: reg %d write failed: %d\n",
-						__func__, v20_init[i].reg, rc);
-					return rc;
-				}
-				printk(KERN_INFO "%s: reg 0x%02x value 0x%02x"
-					" mask 0x%02x\n",
-					__func__, v20_init[i].reg,
-					v20_init[i].value, v20_init[i].mask);
-			}
-		}
-	}
-	printk(KERN_INFO "core type: %d\n", type);
-
-	return rc;
-}
-
 static struct regulator *fm_regulator_s3;
 static struct msm_xo_voter *fm_clock;
 
@@ -5588,7 +5477,6 @@ static struct marimba_platform_data marimba_pdata = {
 	.slave_id[SLAVE_ID_BAHAMA_QMEMBIST]  = BAHAMA_SLAVE_ID_QMEMBIST_ADDR,
 	.bahama_setup = msm_bahama_setup_power,
 	.bahama_shutdown = msm_bahama_shutdown_power,
-	.bahama_core_config = msm_bahama_core_config,
 	.fm = &marimba_fm_pdata,
 };
 
@@ -6009,6 +5897,15 @@ static void __init msm8x60_init_tlmm(void)
 {
 	if (machine_is_msm8x60_rumi3())
 		msm_gpio_install_direct_irq(0, 0, 1);
+
+	msm_gpio_install_direct_irq(PM8058_GPIO_INT, 1, 0);
+	msm_set_direct_connect(TLMM_SCSS_DIR_CONN_IRQ_1,
+				MSM_GPIO_TO_INT(PM8058_GPIO_INT), 1);
+
+	msm_gpio_install_direct_irq(PM8901_GPIO_INT, 2, 0);
+	msm_set_direct_connect(TLMM_SCSS_DIR_CONN_IRQ_2,
+				MSM_GPIO_TO_INT(PM8901_GPIO_INT), 1);
+
 }
 
 #if (defined(CONFIG_MMC_MSM_SDC1_SUPPORT)\
@@ -7482,7 +7379,6 @@ static struct msm_bus_vectors mdp_1080p_vectors[] = {
 		.ib = 417600000,
 	},
 };
-
 static struct msm_bus_paths mdp_bus_scale_usecases[] = {
 	{
 		ARRAY_SIZE(mdp_init_vectors),
@@ -7795,12 +7691,14 @@ static const struct {
 } bt_regs_info[] = {
 	{ "8058_s3", 1800000, 1800000 },
 	{ "8058_s2", 1300000, 1300000 },
+	{ "8058_l2", 1800000, 1800000 },
 	{ "8058_l8", 2900000, 3050000 },
 };
 
 static struct {
 	bool enabled;
 } bt_regs_status[] = {
+	{ false },
 	{ false },
 	{ false },
 	{ false },
@@ -7812,6 +7710,12 @@ static int bahama_bt(int on)
 	int rc;
 	int i;
 	struct marimba config = { .mod_id =  SLAVE_ID_BAHAMA};
+
+	struct bahama_config_register {
+		u8 reg;
+		u8 value;
+		u8 mask;
+	};
 
 	struct bahama_variant_register {
 		const size_t size;
@@ -7894,28 +7798,36 @@ static int bahama_bt(int on)
 		}
 	};
 
-	u8 offset = 0; /* index into bahama configs */
-
 	/* Init mutex to get/set FM/BT status respectively */
 	mutex_init(&config.xfer_lock);
 
 	on = on ? 1 : 0;
-	version = read_bahama_ver();
+	rc = marimba_read_bit_mask(&config, 0x00,  &version, 1, 0x1F);
 
-	if (version ==  VER_UNSUPPORTED) {
+	if (rc < 0) {
 		dev_err(&msm_bt_power_device.dev,
-			"%s: unsupported version\n",
-			__func__);
-		return -EIO;
+			"%s: version read failed: %d\n",
+			__func__, rc);
+		return rc;
 	}
-
-	if (version == VER_2_0) {
-		if (marimba_get_fm_status(&config))
-			offset = 0x01;
+	switch (version) {
+	case 0x00: /* varients of bahama v1 */
+	case 0x08:
+	case 0X10:
+		version = 0x00;
+		break;
+	case 0x09: /* variant of bahama v2 */
+		version = marimba_get_fm_status(&config) ? 0x02 : 0x01;
+		break;
+	default:
+		version = 0xFF;
+		dev_err(&msm_bt_power_device.dev,
+		 "%s: unsupported version\n", __func__);
+		break;
 	}
 
 	/* Voting off 1.3V S2 Regulator,BahamaV2 used in Normal mode */
-	if (on && (version == VER_2_0)) {
+	if (on && ((version == 0x02) || (version == 0x01)))  {
 		for (i = 0; i < ARRAY_SIZE(bt_regs_info); i++) {
 			if ((!strcmp(bt_regs_info[i].name, "8058_s2"))
 				&& (bt_regs_status[i].enabled == true)) {
@@ -7929,13 +7841,20 @@ static int bahama_bt(int on)
 			}
 		}
 	}
+	if ((version >= ARRAY_SIZE(bt_bahama[on])) ||
+	    (bt_bahama[on][version].size == 0)) {
+		dev_err(&msm_bt_power_device.dev,
+			"%s: unsupported version\n",
+			__func__);
+		return -EIO;
+	}
 
-	p = bt_bahama[on][version + offset].set;
+	p = bt_bahama[on][version].set;
 
 	dev_info(&msm_bt_power_device.dev,
 		"%s: found version %d\n", __func__, version);
 
-	for (i = 0; i < bt_bahama[on][version + offset].size; i++) {
+	for (i = 0; i < bt_bahama[on][version].size; i++) {
 		u8 value = (p+i)->value;
 		rc = marimba_write_bit_mask(&config,
 			(p+i)->reg,
@@ -8339,14 +8258,15 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 	if (machine_is_msm8x60_charm_surf() || machine_is_msm8x60_charm_ffa())
 		platform_add_devices(charm_devices, ARRAY_SIZE(charm_devices));
 
-	if (!machine_is_msm8x60_fluid())
-		pm8058_platform_data.charger_sub_device
-			= &pm8058_charger_sub_dev;
-
+	if (machine_is_msm8x60_fluid()) {
+#if defined(CONFIG_SMB137B_CHARGER) || defined(CONFIG_SMB137B_CHARGER_MODULE)
+		/* we dont want to register the pmic charger driver*/
+		pm8058_platform_data.num_subdevs--;
+#endif
 #if defined(CONFIG_SPI_QUP) || defined(CONFIG_SPI_QUP_MODULE)
-	if (machine_is_msm8x60_fluid())
 		platform_device_register(&msm_gsbi10_qup_spi_device);
 #endif
+	}
 
 	if (!machine_is_msm8x60_sim())
 		msm_fb_add_devices();

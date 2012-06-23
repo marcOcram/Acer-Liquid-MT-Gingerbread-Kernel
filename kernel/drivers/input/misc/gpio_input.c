@@ -223,7 +223,7 @@ static int gpio_event_input_request_irqs(struct gpio_input_state *ds)
 #if defined(CONFIG_MACH_ACER_A4) || defined(CONFIG_MACH_ACER_A5)
 		if (!ds->info->keymap[i].no_wake)
 #endif
-		enable_irq_wake(irq);
+			enable_irq_wake(irq);
 	}
 	return 0;
 

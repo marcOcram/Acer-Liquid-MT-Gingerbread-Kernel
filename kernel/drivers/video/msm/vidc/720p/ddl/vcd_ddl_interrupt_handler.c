@@ -239,6 +239,14 @@ static u32 ddl_header_done_callback(struct ddl_context *ddl_context)
 			DDL_TILE_ALIGN(decoder->frame_size.height,
 						 DDL_TILE_ALIGN_HEIGHT);
 	}
+	if (decoder->buf_format.buffer_format == VCD_BUFFER_FORMAT_TILE_4x2) {
+		decoder->frame_size.stride =
+		DDL_TILE_ALIGN(decoder->frame_size.width,
+					DDL_TILE_ALIGN_WIDTH);
+		decoder->frame_size.scan_lines =
+			DDL_TILE_ALIGN(decoder->frame_size.height,
+						 DDL_TILE_ALIGN_HEIGHT);
+	}
 	if (seq_hdr_info.crop_exists)	{
 		decoder->frame_size.width -=
 		(seq_hdr_info.crop_right_offset
@@ -841,12 +849,6 @@ static u32 ddl_get_frame
 		{
 			frame->frame = VCD_FRAME_NOTCODED;
 			frame->data_len = 0;
-			break;
-		}
-	case VIDC_720P_IDRFRAME:
-		{
-			frame->flags |= VCD_FRAME_FLAG_SYNCFRAME;
-			frame->frame = VCD_FRAME_IDR;
 			break;
 		}
 	default:

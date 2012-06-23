@@ -264,7 +264,6 @@ static struct snddev_icodec_data snddev_ihs_mono_rx_data = {
 	.max_voice_rx_vol[VOC_WB_INDEX] = -900,
 	.min_voice_rx_vol[VOC_WB_INDEX] = -2400,
 #endif
-
 };
 
 static struct platform_device msm_ihs_mono_rx_device = {
@@ -664,15 +663,21 @@ static struct snddev_ecodec_data snddev_bt_sco_earpiece_data = {
 	.conf_pcm_ctl_val = BT_SCO_PCM_CTL_VAL,
 	.conf_aux_codec_intf = BT_SCO_AUX_CODEC_INTF,
 	.conf_data_format_padding_val = BT_SCO_DATA_FORMAT_PADDING,
+#if defined(CONFIG_MACH_ACER_A4)
 	.max_voice_rx_vol[VOC_NB_INDEX] = 400,
 	.min_voice_rx_vol[VOC_NB_INDEX] = -1100,
 	.max_voice_rx_vol[VOC_WB_INDEX] = 400,
 	.min_voice_rx_vol[VOC_WB_INDEX] = -1100,
-#if defined(CONFIG_MACH_ACER_A5)
+#elif defined(CONFIG_MACH_ACER_A5)
 	.max_voice_rx_vol[VOC_NB_INDEX] = 0,
 	.min_voice_rx_vol[VOC_NB_INDEX] = -1500,
 	.max_voice_rx_vol[VOC_WB_INDEX] = 0,
 	.min_voice_rx_vol[VOC_WB_INDEX] = -1500,
+#else
+	.max_voice_rx_vol[VOC_NB_INDEX] = 400,
+	.min_voice_rx_vol[VOC_NB_INDEX] = -1100,
+	.max_voice_rx_vol[VOC_WB_INDEX] = 400,
+	.min_voice_rx_vol[VOC_WB_INDEX] = -1100,
 #endif
 };
 

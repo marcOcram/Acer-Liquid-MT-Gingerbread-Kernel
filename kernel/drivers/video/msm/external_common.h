@@ -271,5 +271,4 @@ void external_common_state_remove(void);
 u16 hdmi_common_get_phy_addr(void);
 u32 hdmi_common_get_hdmi_ieee(void);
 #endif
-
 #endif /* __EXTERNAL_COMMON_H__ */

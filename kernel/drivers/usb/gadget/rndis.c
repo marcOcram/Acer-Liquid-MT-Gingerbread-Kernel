@@ -297,6 +297,7 @@ gen_ndis_query_resp (int configNr, u32 OID, u8 *buf, unsigned buf_len,
 			memcpy (outbuf,
 				rndis_per_dev_params [configNr].vendorDescr, length);
 		} else {
+			pr_err("[USB] Rndis error: rndis_per_dev_params [configNr].vendorDescr is null!\n");
 			outbuf[0] = 0;
 		}
 		retval = 0;
